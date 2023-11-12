@@ -1,4 +1,4 @@
-require :pathname
+require 'pathname'
 
 class DirectedAcyclicPathGraph
   attr_reader :nodes, :root_path
@@ -24,13 +24,18 @@ class DirectedAcyclicPathGraph
     end
   end
 
-  def all_target_exist?
-    return false
+  def all_dependencies_exist?
+    @nodes.all? do |_, node|
+      node.dependencies.all? do |dep|
+        File.exist?(dep.path) || @nodes.any? { |_, other| other != node && other.path == dep.path }
+      end
+    end
   end
 
   def add_dependency(from_path, to_path)
     from_node = @nodes[normalize_path(from_path)]
-    to_node = @nodes[normalize_path(to_path)]
+    real_to_path = normalize_path(to_path)
+    to_node = @nodes[real_to_path] || Node.new(real_to_path)
     from_node.add_dependency(to_node)
   end
 

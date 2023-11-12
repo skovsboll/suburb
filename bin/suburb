@@ -6,37 +6,55 @@ require_relative '../lib/node'
 require_relative '../lib/directed_acyclic_path_graph'
 
 module Suburb
-  class OuterDSL
-    def files
-      @files ||= []
+  module DSL
+    class Root
+      def files
+        @files ||= []
+      end
+
+      def file(main_file, &block)
+        f = DSL::File.new(main_file)
+        f.instance_exec(&block)
+        files << f
+      end
+
+      def to_dag(root_path)
+        dag = DirectedAcyclicPathGraph.new(root_path)
+        files.each do |f|
+          f.outs.each do |out_|
+            dag.add_node(out_)
+            f.ins.each do |in_|
+              dag.add_node(in_)
+              dag.add_dependency(out_, in_)
+            end
+          end
+        end
+        dag
+      end
     end
 
-    def file(spec, &block)
-      files << InnerDSL.new(spec).instance_exec(&block)
+    class File
+      def initialize(main_file)
+        @outs = [main_file]
+      end
+
+      def outs
+        @outs
+      end
+
+      def ins
+        @ins ||= []
+      end
+
+      def run(&block)
+        @run = block
+      end
     end
 
-    def exec(symbol); end
-
-    def to_dag(spec)
-      {}
-    end
-  end
-
-  class InnerDSL
-    def initialize(spec)
-      @spec = spec
-    end
-
-    def outs
-      @outs ||= []
-    end
-
-    def ins
-      @ins ||= []
-    end
-
-    def run(&block)
-      @run = block
+    class Run
+      def asdf(command)
+        sh "asdf exec #{command}"
+      end
     end
   end
 
@@ -45,9 +63,10 @@ module Suburb
 
     def run(target_file_path)
       subu_rb = find_subu_rb(target_file_path) or die("No subu.rb found defining target file '#{target_file_path}' found")
-      spec = OuterDSL.new.instance_eval(File.read(subu_rb))
-      dag = spec.to_dag
-      raise "some targets do not exist" unless dag.all_targets_exist?
+      spec = DSL::Root.new
+      spec.instance_eval(File.read(subu_rb))
+      dag = spec.to_dag(subu_rb.dirname)
+      raise "some targets do not exist" unless dag.all_dependencies_exist?
     end
 
     def find_subu_rb(target_file_path)
