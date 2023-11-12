@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require_relative '../lib/node'
+require_relative '../lib/directed_acyclic_path_graph'
+
+module Suburb
+  class OuterDSL
+    def files
+      @files ||= []
+    end
+
+    def file(spec, &block)
+      files << InnerDSL.new(spec).instance_exec(&block)
+    end
+
+    def exec(symbol); end
+
+    def to_dag(spec)
+      {}
+    end
+  end
+
+  class InnerDSL
+    def initialize(spec)
+      @spec = spec
+    end
+
+    def outs
+      @outs ||= []
+    end
+
+    def ins
+      @ins ||= []
+    end
+
+    def run(&block)
+      @run = block
+    end
+  end
+
+  class Runner
+    require 'pathname'
+
+    def run(target_file_path)
+      subu_rb = find_subu_rb(target_file_path) or die("No subu.rb found defining target file '#{target_file_path}' found")
+      spec = OuterDSL.new.instance_eval(File.read(subu_rb))
+      dag = spec.to_dag
+      raise "some targets do not exist" unless dag.all_targets_exist?
+    end
+
+    def find_subu_rb(target_file_path)
+      Pathname.new(target_file_path).ascend do |parent|
+        maybe_subu = parent + "subu.rb"
+        return maybe_subu.realpath if maybe_subu.exist?
+      end
+    end
+
+    def die(reason)
+      warn reason
+      exit 1
+    end
+  end
+end
+
+raise 'no file task given' unless ARGV[0]
+
+Suburb::Runner.new.run(File.expand_path(ARGV[0]))

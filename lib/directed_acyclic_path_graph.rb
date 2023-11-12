@@ -1,8 +1,10 @@
+require :pathname
+
 class DirectedAcyclicPathGraph
-  attr_reader :nodes
+  attr_reader :nodes, :root_path
 
   def initialize(root_path)
-    @root_path = File.expand_path(without_lakefile(root_path))
+    @root_path = Pathname.new(root_path).realpath
     @nodes = {}
   end
 
@@ -16,6 +18,14 @@ class DirectedAcyclicPathGraph
     other_graph.nodes.each do |node|
       add_node(node.path)
     end
+
+    @root_path.ascend do |parent|
+      @root_path = parent.realpath if parent == other_graph.root_path
+    end
+  end
+
+  def all_target_exist?
+    return false
   end
 
   def add_dependency(from_path, to_path)
@@ -26,13 +36,5 @@ class DirectedAcyclicPathGraph
 
   def normalize_path(path)
     File.expand_path(path, @root_path)
-  end
-
-  def without_lakefile(path)
-    if File.basename(path) == 'Lakefile'
-      File.dirname(path)
-    else
-      path
-    end
   end
 end
