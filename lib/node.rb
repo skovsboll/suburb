@@ -19,4 +19,9 @@ class Node
   def circular_dependency?(node)
     node.dependencies.include?(self) || node.dependencies.any? { |dep| circular_dependency?(dep) }
   end
+
+  def pp(indent)
+    puts "#{''.rjust(indent)}#{@path}"
+    @dependencies.each { _1.pp(indent+4)}
+  end
 end

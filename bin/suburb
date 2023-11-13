@@ -4,6 +4,7 @@
 
 require_relative '../lib/node'
 require_relative '../lib/directed_acyclic_path_graph'
+require 'prettyprint'
 
 module Suburb
   module DSL
@@ -24,8 +25,13 @@ module Suburb
           f.outs.each do |out_|
             dag.add_node(out_)
             f.ins.each do |in_|
-              dag.add_node(in_)
-              dag.add_dependency(out_, in_)
+              path = ::File.expand_path(in_, root_path)
+              Dir.glob(path) do |expanded|
+                fn = Pathname.new(expanded).basename
+                if fn != "subu.rb"
+                  dag.add_dependency(out_, expanded)
+                end
+              end
             end
           end
         end
@@ -49,6 +55,14 @@ module Suburb
       def run(&block)
         @run = block
       end
+
+      def die(*)
+        raise "Wrap runtime logic in a 'run do .. end' block"
+      end
+      alias :sh :die
+      alias :exec :die
+      alias :system :die 
+      alias :asdf :die 
     end
 
     class Run
@@ -67,6 +81,8 @@ module Suburb
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
       raise "some targets do not exist" unless dag.all_dependencies_exist?
+      dag.pp
+      execute dag
     end
 
     def find_subu_rb(target_file_path)
@@ -74,6 +90,10 @@ module Suburb
         maybe_subu = parent + "subu.rb"
         return maybe_subu.realpath if maybe_subu.exist?
       end
+    end
+
+    def execute(dag)
+      puts "Checking #{dag.nodes.size} files..."
     end
 
     def die(reason)

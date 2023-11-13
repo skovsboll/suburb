@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-file(->(ins) { "package-#{ins['version.txt'].read_all}.tgz" }) do
-  ins << 'dist/package.json'
+# file(->(ins) { "package-#{ins['version.txt'].read_all}.tgz" }) do
+#   ins << 'dist/package.json'
 
-  run { |_, _outs| asdf "npm pack #{outs.only}" }
-end
+#   run { |_, _outs| asdf "npm pack #{outs.only}" }
+#   # asdf "npm pack #{outs.only}"
+# end
 
 file 'dist/package.json' do
   ins << 'package.json'

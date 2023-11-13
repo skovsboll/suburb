@@ -42,4 +42,9 @@ class DirectedAcyclicPathGraph
   def normalize_path(path)
     File.expand_path(path, @root_path)
   end
+
+  def pp
+    puts "*** #{@root_path}:"
+    @nodes.each { _2.pp(4) }
+  end
 end
