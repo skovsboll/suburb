@@ -28,9 +28,7 @@ module Suburb
               path = ::File.expand_path(in_, root_path)
               Dir.glob(path) do |expanded|
                 fn = Pathname.new(expanded).basename
-                if fn != "subu.rb"
-                  dag.add_dependency(out_, expanded)
-                end
+                dag.add_dependency(out_, expanded) if fn != 'subu.rb'
               end
             end
           end
@@ -44,9 +42,7 @@ module Suburb
         @outs = [main_file]
       end
 
-      def outs
-        @outs
-      end
+      attr_reader :outs
 
       def ins
         @ins ||= []
@@ -59,15 +55,16 @@ module Suburb
       def die(*)
         raise "Wrap runtime logic in a 'run do .. end' block"
       end
-      alias :sh :die
-      alias :exec :die
-      alias :system :die 
-      alias :asdf :die 
+
+      alias sh die
+      alias exec die
+      alias system die
+      alias asdf die
     end
 
     class Run
-      def asdf(command)
-        sh "asdf exec #{command}"
+      def rtx(command)
+        sh "rtx exec -- #{command}"
       end
     end
   end
@@ -80,14 +77,15 @@ module Suburb
       spec = DSL::Root.new
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
-      raise "some targets do not exist" unless dag.all_dependencies_exist?
+      raise 'some targets do not exist' unless dag.all_dependencies_exist?
+
       dag.pp
       execute dag
     end
 
     def find_subu_rb(target_file_path)
       Pathname.new(target_file_path).ascend do |parent|
-        maybe_subu = parent + "subu.rb"
+        maybe_subu = parent + 'subu.rb'
         return maybe_subu.realpath if maybe_subu.exist?
       end
     end
