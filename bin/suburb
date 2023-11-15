@@ -5,6 +5,7 @@
 require_relative '../lib/node'
 require_relative '../lib/directed_acyclic_path_graph'
 require 'prettyprint'
+require 'tty-progressbar'
 
 module Suburb
   module DSL
@@ -73,15 +74,13 @@ module Suburb
       end
     end
 
-    def run(target_file_path)
+    def run(target_file_path, force)
       subu_rb = find_subu_rb(target_file_path) or die("No subu.rb found defining target file '#{target_file_path}' found")
       spec = DSL::Root.new
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
       raise 'some targets do not exist' unless dag.all_dependencies_exist?
-
-      dag.pp
-      execute dag, spec, target_file_path
+      execute dag, spec, target_file_path, force
     end
 
     def find_subu_rb(target_file_path)
@@ -91,28 +90,32 @@ module Suburb
       end
     end
 
-    def execute(dag, subu_spec, target_file_path)
+    def execute(dag, subu_spec, target_file_path, force = false)
       target = Pathname.new(target_file_path).expand_path
-      puts "Checking #{target} for changes..."
       raise "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
 
       root_node = dag.nodes[target.to_s]
-      deps = transitive_deps_requiring_build(dag, root_node)
-      puts "Considering #{deps} deps..."
+      deps = if force
+        root_node.all_dependencies
+      else
+        transitive_deps_requiring_build(dag, root_node)
+      end
 
       execute_nodes_in_order deps + [root_node]
     end
 
     def execute_nodes_in_order(nodes)
-      nodes.each do |node|
+      bar = TTY::ProgressBar::Multi.new("Building [:bar]", total: nodes.size)
+
+      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1) ] }
+
+      nodes_with_bars.each do |node, sub_bar|
         path = Pathname.new(node.path)
-        puts "path: #{path.to_s} builder: #{node.builder}"
         next unless node.builder
-
-        puts "Building #{path}..."
-
         Run.new.instance_exec(node.dependencies.map(&:path), Array(path), &node.builder)
+        sub_bar.advance
       end
+      bar.finish
     end
 
     def transitive_deps_requiring_build(dag, root_node)
@@ -146,6 +149,9 @@ module Suburb
   end
 end
 
-raise 'no file task given' unless ARGV[0]
-
-Suburb::Runner.new.run(File.expand_path(ARGV[0]))
+args = ARGV.group_by { _1 =~ /^\-/ }
+raise 'no file task given' unless args[nil]
+runner = Suburb::Runner.new
+args[nil].each { |file|
+  runner.run(File.expand_path(file), Array(args[0]).include?('-f'))
+}

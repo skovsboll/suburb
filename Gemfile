@@ -2,6 +2,8 @@
 
 source 'https://rubygems.org'
 
+gem "tty-progressbar"
+
 group :development, :test do
   gem 'guard'
   gem 'guard-rspec'

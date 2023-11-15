@@ -22,6 +22,10 @@ class Node
     node.dependencies.include?(self) || node.dependencies.any? { |dep| circular_dependency?(dep) }
   end
 
+  def all_dependencies
+    @dependencies.flat_map(&:all_dependencies) + @dependencies
+  end
+
   def pp(indent)
     puts "#{''.rjust(indent)}#{@path}"
     @dependencies.each { _1.pp(indent + 4) }
