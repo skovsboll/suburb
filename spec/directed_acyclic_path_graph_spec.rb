@@ -89,6 +89,17 @@ describe DirectedAcyclicPathGraph do
       end.to raise_error(RuntimeError)
     end
 
+    it 'retains builder' do
+      dag = described_class.new('/etc')
+      dag.add_node('/etc/z')
+      dag.add_node('/etc/x') do
+        42
+      end
+      dag.add_dependency('/etc/z', '/etc/x')
+      expect(dag.nodes['/etc/x'].builder[]).to eq(42)
+    end
+
+
     it 'cycle-1' do
       dag = described_class.new('.')
       dag.add_node('one')

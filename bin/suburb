@@ -62,15 +62,16 @@ module Suburb
       attr_reader :outs, :ins, :builder
     end
 
-    class Run
-      def rtx(command)
-        sh "rtx exec -- #{command}"
-      end
-    end
   end
 
   class Runner
     require 'pathname'
+
+    class Run
+      def rtx(command)
+        `rtx exec -- #{command}`
+      end
+    end
 
     def run(target_file_path)
       subu_rb = find_subu_rb(target_file_path) or die("No subu.rb found defining target file '#{target_file_path}' found")
@@ -91,40 +92,50 @@ module Suburb
     end
 
     def execute(dag, subu_spec, target_file_path)
-      realpath = Pathname.new(target_file_path).expand_path
-      puts "Checking #{realpath} for changes..."
-      raise "No suburb definition for #{realpath}" unless dag.nodes.include? realpath
+      target = Pathname.new(target_file_path).expand_path
+      puts "Checking #{target} for changes..."
+      raise "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
 
-      root_node = dag.nodes[realpath]
-      deps = transitive_deps_requiring_build(root_node)
-      puts "Considering #{deps.size} deps..."
+      root_node = dag.nodes[target.to_s]
+      deps = transitive_deps_requiring_build(dag, root_node)
+      puts "Considering #{deps} deps..."
 
-      execute_nodes_in_order deps + [root_node], subu_spec
+      execute_nodes_in_order deps + [root_node]
     end
 
     def execute_nodes_in_order(nodes)
       nodes.each do |node|
         path = Pathname.new(node.path)
+        puts "path: #{path.to_s} builder: #{node.builder}"
         next unless node.builder
 
         puts "Building #{path}..."
-        node.builder.call(node.path, node.dependencies)
+
+        Run.new.instance_exec(node.dependencies.map(&:path), Array(path), &node.builder)
       end
     end
 
-    def transitive_deps_requiring_build(root_node)
-      modified_since(root_node.path, root_node.dependencies)
+    def transitive_deps_requiring_build(dag, root_node)
+      modified_since(dag, root_node.path, root_node.dependencies)
     end
 
-    def modified_since(path, deps)
-      children = deps.select do |dep|
+    def lookup(dag, dep)
+      dag.nodes[dep.path.to_s] || dep
+    end
+
+    def modified_since(dag, path, deps)
+      actual_deps = deps.map{ lookup(dag, _1) }
+
+      grand_children = actual_deps.map { |dep|        
+        modified_since(dag, dep.path, dep.dependencies) 
+      }
+      children = actual_deps.select do |dep|
         if File.exist?(dep.path) && File.exist?(path)
           File.mtime(dep.path) > File.mtime(path)
         else
           true
         end
       end
-      grand_children = deps.map { |dep| modified_since(dep.path, dep.dependencies) }
       (grand_children + children).flatten
     end
 
