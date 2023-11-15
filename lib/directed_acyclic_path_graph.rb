@@ -1,17 +1,21 @@
 require 'pathname'
+require_relative 'node'
 
 class DirectedAcyclicPathGraph
   attr_reader :nodes, :root_path
 
   def initialize(root_path)
-    @root_path = Pathname.new(root_path).realpath
+    @root_path = Pathname.new(root_path).expand_path
     @nodes = {}
   end
 
-  def add_node(path)
+  def add_node(path, &block)
     normalized_path = normalize_path(path)
-    node = Node.new(normalized_path)
-    @nodes[normalized_path] = node
+    raise 'Can not add paths outside root path' unless is_subdir_of?(normalized_path, @root_path)
+
+    node = Node.new(normalized_path, &block)
+
+    @nodes[normalized_path.to_s] = node
   end
 
   def merge!(other_graph)
@@ -33,14 +37,26 @@ class DirectedAcyclicPathGraph
   end
 
   def add_dependency(from_path, to_path)
-    from_node = @nodes[normalize_path(from_path)]
-    real_to_path = normalize_path(to_path)
+    from_node = @nodes[normalize_path(from_path).to_s]
+    real_to_path = normalize_path(to_path).to_s
+
+    raise 'Can not add paths outside root path' unless is_subdir_of?(real_to_path, @root_path)
+
     to_node = @nodes[real_to_path] || Node.new(real_to_path)
     from_node.add_dependency(to_node)
   end
 
   def normalize_path(path)
-    File.expand_path(path, @root_path)
+    Pathname.new(File.expand_path(path, @root_path))
+  end
+
+  def is_subdir_of?(path, maybe_root)
+    path = Pathname.new(path)
+    maybe_root = Pathname.new(maybe_root)
+    path.ascend do |parent|
+      return true if parent == maybe_root
+    end
+    false
   end
 
   def pp
