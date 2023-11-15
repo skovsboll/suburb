@@ -29,9 +29,22 @@ module Suburb
       end
 
       def add_out(dag, out, ins, &builder)
-        dag.add_node(out, &builder)
-        ins.each do |in_|
-          add_in(dag, in_, out)
+        case out
+        in Proc => proc
+          ins
+            .map { ::File.expand_path(_1, dag.root_path) }
+            .map { proc.call(Pathname.new(_1)) }
+            .each do |out_|
+              dag.add_node(out_, &builder)
+              ins.each do |in_|
+                add_in(dag, in_, out_)
+              end
+            end
+        in String => out_
+          dag.add_node(out_, &builder)
+          ins.each do |in_|
+            add_in(dag, in_, out_)
+          end
         end
       end
 
@@ -96,7 +109,7 @@ module Suburb
 
       root_node = dag.nodes[target.to_s]
       deps = if force
-        root_node.all_dependencies
+        root_node.all_dependencies.map{ lookup(dag, _1) }
       else
         transitive_deps_requiring_build(dag, root_node)
       end
@@ -105,7 +118,7 @@ module Suburb
     end
 
     def execute_nodes_in_order(nodes)
-      bar = TTY::ProgressBar::Multi.new("Building [:bar]", total: nodes.size)
+      bar = TTY::ProgressBar::Multi.new("Building #{nodes.first.path.to_s} [:bar]", total: nodes.size)
 
       nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1) ] }
 

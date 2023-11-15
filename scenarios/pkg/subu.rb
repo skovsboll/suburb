@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
-# file(->(ins) { "package-#{ins['version.txt'].read_all}.tgz" }, ins: ['dist/package.json']) do |_, outs| 
-#   rtx "npm pack #{outs[0]}"
-# end
+file(
+  ->(in_) { "dist/package-#{in_.read.strip}.tgz" }, 
+  ins: ['dist/package.json', 'version.txt']
+  ) do |ins, _outs| 
+  rtx "npm pack #{ins[0].dirname}"
+end
 
 file 'dist/package.json', ins: ['package.json', 'version.txt'] do |ins, outs|
   # replace version number in package.json with the one read from version.txt
