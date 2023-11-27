@@ -1,79 +1,98 @@
+# frozen_string_literal: true
+
 require 'pathname'
 require_relative 'node'
 
-class DirectedAcyclicPathGraph
-  attr_reader :nodes, :root_path
+module Suburb
+  # DirectedAcyclicPathGraph is a directed acyclic graph of normalized file system paths.
+  class DirectedAcyclicPathGraph
+    # @ nodes: Hash[String, Node]
+    attr_reader :nodes
+    # @ root_path: Pathname
+    attr_reader :root_path
 
-  def initialize(root_path)
-    @root_path = Pathname.new(root_path).expand_path
-    @nodes = {}
-  end
-
-  def add_node(path, &block)
-    normalized_path = normalize_path(path)
-    raise 'Can not add paths outside root path' unless is_subdir_of?(normalized_path, @root_path)
-
-    node = Node.new(normalized_path, &block)
-
-    @nodes[normalized_path.to_s] = node
-  end
-
-  def merge!(other_graph)
-    other_graph.nodes.each do |node|
-      add_node(node.path)
+    def initialize(root_path)
+      @root_path = Pathname.new(root_path).expand_path
+      @nodes = {}
     end
 
-    @root_path.ascend do |parent|
-      @root_path = parent.realpath if parent == other_graph.root_path
+    # @param [String] path
+    # @return [Node]
+    def add_node(path)
+      absolute_path = normalize_path(path)
+
+      explain_outside_root_path!(path, absolute_path, root_path) unless @root_path.child_path?(absolute_path)
+
+      node = Node.new(absolute_path, path)
+
+      @nodes[absolute_path.to_s] = node
+
+      node
     end
-  end
 
-  def discover!
+    def explain_outside_root_path!(path, absolute_path, root_path)
+      raise ''"A subu.rb file can not add paths outside root path.
+        The root path of the subu.rb is '#{root_path}' You attempted to add a file at
+        '#{absolute_path}'. All relative paths in a subu.rb file are considered relative to
+        the closest subu.rb file.
+        The file you tried to add has the path '#{path}' which, when normalized, is higher in
+        the file system than '#{root_path}' (the subu.rb file).
+        "''
+    end
 
-    
-  end
+    # @param [DirectedAcyclicPathGraph] other_graph
+    def merge!(other_graph)
+      other_graph.nodes.each do |node|
+        add_node(node.path)
+      end
 
-  def all_dependencies_exist?
-    @nodes.all? do |_, node|
-      node.dependencies.all? do |dep|
-        File.exist?(dep.path) || @nodes.any? { |_, other| other != node && other.path == dep.path }
+      @root_path.ascend do |parent|
+        @root_path = parent.realpath if parent == other_graph.root_path
       end
     end
-  end
 
-  def missing_dependecies
-    @nodes.flat_map do |_, node|
-      node.dependencies.flat_map do |dep|
-        File.exist?(dep.path) || @nodes.any? { |_, other| other != node && other.path == dep.path }
+    # @return [Array[Node]]
+    def missing_dependecies
+      @nodes.flat_map do |_, node|
+        node.dependencies.select do |dep|
+          !File.exist?(dep.path) && @nodes.none? { |_, other| other != node && other.path == dep.path }
+        end
       end
     end
-  end
 
-  def add_dependency(from_path, to_path)
-    from_node = @nodes[normalize_path(from_path).to_s]
-    real_to_path = normalize_path(to_path).to_s
+    # @param [String] from_path
+    # @param [String] to_path
+    # @return [Node]
+    def add_dependency(from_path, to_path)
+      from_node = @nodes[normalize_path(from_path).to_s]
+      absolute_to_path = normalize_path(to_path).to_s
 
-    raise 'Can not add paths outside root path' unless is_subdir_of?(real_to_path, @root_path)
+      explain_outside_root_path!(path, absolute_to_path, root_path) unless @root_path.child_path?(absolute_to_path)
 
-    to_node = @nodes[real_to_path] || Node.new(real_to_path)
-    from_node.add_dependency(to_node)
-  end
+      to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path)
+      from_node.add_dependency(to_node)
 
-  def normalize_path(path)
-    Pathname.new(File.expand_path(path, @root_path))
-  end
-
-  def is_subdir_of?(path, maybe_root)
-    path = Pathname.new(path)
-    maybe_root = Pathname.new(maybe_root)
-    path.ascend do |parent|
-      return true if parent == maybe_root
+      to_node
     end
-    false
+
+    def normalize_path(path)
+      Pathname.new(File.expand_path(path, @root_path))
+    end
   end
 
-  def pp
-    puts "*** #{@root_path}:"
-    @nodes.each { _2.pp(4) }
+  # Hierarchy is a mixin for Pathname to determine if a path is a child of another path.
+  module Hierarchy
+    def child_path?(path)
+      path = Pathname.new(path)
+      path.ascend do |parent|
+        return true if parent == self
+      end
+      false
+    end
+  end
+
+  # Pathname is extended with the Hierarchy mixin.
+  class ::Pathname
+    include Hierarchy
   end
 end

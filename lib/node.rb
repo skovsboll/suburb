@@ -1,33 +1,36 @@
 # frozen_string_literal: true
 
-# Hey man, Node is awesome
-#
-class Node
-  attr_accessor :path, :dependencies, :builder
+module Suburb
+  # A tree like structure.
+  # A node represents an absolute, normalized path in a file system and its dependent nodes.
+  # Does not allow cyclic dependecies.
+  class Node
+    attr_accessor :path, :dependencies, :original_path
 
-  def initialize(path, &builder)
-    @path = Pathname.new(path)
-    @dependencies = []
-    @builder = builder
-  end
+    def initialize(path, original_path)
+      @path = Pathname.new(path)
+      @original_path = original_path
+      raise 'A node must be constructed with a absolute path' unless @path.absolute?
 
-  def add_dependency(node)
-    raise 'Can not add depenency to one self' if node.path == path
-    raise 'Circular dependency or duplicate node detected' if @dependencies.include?(node) || circular_dependency?(node)
+      @dependencies = []
+    end
 
-    @dependencies << node
-  end
+    def add_dependency(node)
+      raise 'Can not add depenency to one self' if node.path == path
 
-  def circular_dependency?(node)
-    node.dependencies.include?(self) || node.dependencies.any? { |dep| circular_dependency?(dep) }
-  end
+      if @dependencies.include?(node) || circular_dependency?(node)
+        raise 'Circular dependency or duplicate node detected'
+      end
 
-  def all_dependencies
-    @dependencies.flat_map(&:all_dependencies) + @dependencies
-  end
+      @dependencies << node
+    end
 
-  def pp(indent)
-    puts "#{''.rjust(indent)}#{@path}"
-    @dependencies.each { _1.pp(indent + 4) }
+    def circular_dependency?(node)
+      node.dependencies.include?(self) || node.dependencies.any? { |dep| circular_dependency?(dep) }
+    end
+
+    def all_dependencies_depthwise
+      @dependencies.flat_map(&:all_dependencies) + @dependencies
+    end
   end
 end

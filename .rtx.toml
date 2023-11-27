@@ -1,4 +1,4 @@
 [tools]
-ruby = '3.2.2'
+ruby = "latest"
 elm = '0.19.1'
 git = '2.29.2'

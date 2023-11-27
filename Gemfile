@@ -9,4 +9,5 @@ group :development, :test do
   gem 'guard-rspec'
   gem 'rspec'
   gem 'solargraph'
+  gem 'ruby-lsp'
 end
