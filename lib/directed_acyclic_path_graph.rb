@@ -28,9 +28,22 @@ class DirectedAcyclicPathGraph
     end
   end
 
+  def discover!
+
+    
+  end
+
   def all_dependencies_exist?
     @nodes.all? do |_, node|
       node.dependencies.all? do |dep|
+        File.exist?(dep.path) || @nodes.any? { |_, other| other != node && other.path == dep.path }
+      end
+    end
+  end
+
+  def missing_dependecies
+    @nodes.flat_map do |_, node|
+      node.dependencies.flat_map do |dep|
         File.exist?(dep.path) || @nodes.any? { |_, other| other != node && other.path == dep.path }
       end
     end

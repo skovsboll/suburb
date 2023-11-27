@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 file(
-  ->(in_) { "dist/package-#{in_.read.strip}.tgz" }, 
+  lambda { |in_| "dist/package-#{in_.read.strip}.tgz" },
   ins: ['dist/package.json', 'version.txt']
-  ) do |ins, _outs| 
+  ) do |ins, _outs|
   rtx "npm pack #{ins[0].dirname}"
 end
 

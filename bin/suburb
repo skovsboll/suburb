@@ -92,6 +92,9 @@ module Suburb
       spec = DSL::Root.new
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
+
+      dag.discover!
+      
       raise 'some targets do not exist' unless dag.all_dependencies_exist?
       execute dag, spec, target_file_path, force
     end
