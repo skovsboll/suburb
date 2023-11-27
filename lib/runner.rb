@@ -10,9 +10,14 @@ module Suburb
       end
     end
 
-    def run(target_file_path, force)
+    def run(target_file_path, force: false)
       subu_rb = find_subu_rb(target_file_path) or
         die("No subu.rb found defining target file '#{target_file_path}' found")
+
+      run_subu_spec(subu_rb, target_file_path, force:)
+    end
+
+    def run_subu_spec(subu_rb, target_file_path, force: false)
       spec = DSL::Root.new
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
@@ -24,11 +29,13 @@ module Suburb
         "''
       end
 
-      execute dag, spec, target_file_path, force
+      execute dag, spec, target_file_path, force:
     end
 
-    def find_subu_rb(target_file_path)
-      Pathname.new(target_file_path).ascend do |parent|
+    # @param [String] file_path
+    # @return [Root|NilClass]
+    def find_subu_rb(file_path)
+      Pathname.new(file_path).ascend do |parent|
         maybe_subu = parent + 'subu.rb'
         return maybe_subu.realpath if maybe_subu.exist?
       end
@@ -38,29 +45,35 @@ module Suburb
     # @param [DSL::Root] _subu_spec
     # @param [String] target_file_path
     # @param [Boolean] force
-    def execute(dag, subu_spec, target_file_path, force = false)
+    def execute(dag, subu_spec, target_file_path, force: false)
       target = Pathname.new(target_file_path).expand_path
       raise "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
 
       root_node = dag.nodes[target.to_s]
       deps = if force
-               root_node.all_dependencies.map { lookup(dag, _1) }
+               root_node.all_dependencies_depthwise.map { lookup(dag, _1) }
              else
                transitive_deps_requiring_build(dag, root_node)
              end
 
-      execute_nodes_in_order(subu_spec, deps + [root_node])
+      execute_nodes_in_order(subu_spec, deps + [root_node], force:)
     end
 
     # @param [DSL::Root] subu_spec
     # @param [Array[Node]] nodes
-    def execute_nodes_in_order(subu_spec, nodes)
+    def execute_nodes_in_order(subu_spec, nodes, force: false)
       bar = TTY::ProgressBar::Multi.new("Building #{nodes.first.path} [:bar]", total: nodes.size)
 
       nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1)] }
 
       nodes_with_bars.each do |node, sub_bar|
         builder = subu_spec.builders[node.path.to_s]
+
+        if builder.nil?
+          maybe_subu_spec = find_subu_rb(node.path)
+          run_subu_spec(maybe_subu_spec, node.path.to_s, force:) if maybe_subu_spec
+        end
+
         next unless builder
 
         last_modified = (File.mtime(node.path) if File.exist?(node.path))

@@ -14,5 +14,5 @@ raise 'no file task given' unless args[nil]
 
 runner = Suburb::Runner.new
 args[nil].each do |file|
-  runner.run(File.expand_path(file), Array(args[0]).include?('-f'))
+  runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
 end

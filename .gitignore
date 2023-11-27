@@ -1,3 +1,5 @@
 /scenarios/pkg/dist/
 /scenarios/pkg/version.txt
 the-package-*.tgz
+/scenarios/app.zip
+/scenarios/src/generated_code/*

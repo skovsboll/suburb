@@ -30,7 +30,7 @@ module Suburb
     end
 
     def all_dependencies_depthwise
-      @dependencies.flat_map(&:all_dependencies) + @dependencies
+      @dependencies.flat_map(&:all_dependencies_depthwise) + @dependencies
     end
   end
 end
