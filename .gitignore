@@ -1,5 +1,6 @@
-/scenarios/pkg/dist/
-/scenarios/pkg/version.txt
+scenarios/pkg/dist/
+scenarios/pkg/version.txt
 the-package-*.tgz
-/scenarios/app.zip
-/scenarios/src/generated_code/*
+scenarios/app.zip
+scenarios/src/generated_code/*
+.DS_Store

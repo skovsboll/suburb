@@ -27,6 +27,11 @@ module Suburb
         dag
       end
 
+      def merge!(other_spec)
+        @files += other_spec.files
+        @builders.merge!(other_spec.builders)
+      end
+
       def add_out(dag, out, ins, &builder)
         case out
         in Proc => proc

@@ -4,7 +4,7 @@ module Suburb
   class Runner
     require 'pathname'
 
-    class Run
+    class RtxExec
       def rtx(command)
         `rtx exec -- #{command}`
       end
@@ -22,10 +22,20 @@ module Suburb
       spec.instance_eval(File.read(subu_rb))
       dag = spec.to_dag(subu_rb.dirname)
 
-      missing_dependencies = dag.missing_dependecies
-      unless missing_dependencies.none?
+      dag.undeclared_dependencies.each do |dep|
+        maybe_subu_rb = find_subu_rb(dep.path)
+        next unless maybe_subu_rb && maybe_subu_rb.dirname != dag.root_path
+
+        other_spec = DSL::Root.new
+        other_spec.instance_eval(File.read(maybe_subu_rb))
+        other_dag = other_spec.to_dag(maybe_subu_rb.dirname)
+        dag.merge!(other_dag)
+        spec.merge!(other_spec)
+      end
+
+      unless dag.missing_dependencies.none?
         raise ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
-        #{missing_dependencies.map(&:original_path)}
+        #{dag.missing_dependencies.map(&:original_path)}
         "''
       end
 
@@ -62,64 +72,78 @@ module Suburb
     # @param [DSL::Root] subu_spec
     # @param [Array[Node]] nodes
     def execute_nodes_in_order(subu_spec, nodes, force: false)
-      bar = TTY::ProgressBar::Multi.new("Building #{nodes.first.path} [:bar]", total: nodes.size)
-
-      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1)] }
-
-      nodes_with_bars.each do |node, sub_bar|
+      with_progress(nodes) do |node|
         builder = subu_spec.builders[node.path.to_s]
-
-        if builder.nil?
-          maybe_subu_spec = find_subu_rb(node.path)
-          run_subu_spec(maybe_subu_spec, node.path.to_s, force:) if maybe_subu_spec
-        end
-
         next unless builder
 
-        last_modified = (File.mtime(node.path) if File.exist?(node.path))
+        last_modified = maybe_last_modified(node)
+        ins = node.dependencies.map(&:path)
+        outs = Array(node.path)
+        puts({ ins:, outs: })
+        RtxExec.new.instance_exec(ins, outs, &builder)
+        assert_output_was_built!(node, last_modified)
+      end
+    end
 
-        Run.new.instance_exec(node.dependencies.map(&:path), Array(node.path), &builder)
+    def maybe_last_modified(node)
+      (File.mtime(node.path) if File.exist?(node.path))
+    end
 
-        unless File.exist?(node.path)
-          raise ''"Build definition code block failed to create the expected output file:
-          #{node.original_path}
-          "''
-        end
-
-        unless last_modified.nil? || File.mtime(node.path) > last_modified
-          raise ''"Build definition code block failed to create the expected output file:
-          #{node.original_path}.
-          The file is present, but it has not been updated.
-          "''
-        end
-
+    def with_progress(nodes, &block)
+      bar = TTY::ProgressBar::Multi.new("Building #{nodes.first.path} [:bar]", total: nodes.size)
+      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1)] }
+      nodes_with_bars.each do |node, sub_bar|
+        block[node]
         sub_bar.advance
       end
+    ensure
       bar.finish
     end
 
+    def assert_output_was_built!(node, last_modified)
+      unless File.exist?(node.path)
+        raise ''"Build definition code block failed to create the expected output file:
+          #{node.path}
+          "''
+      end
+
+      return if last_modified.nil? || File.mtime(node.path) > last_modified
+
+      raise ''"Build definition code block failed to create the expected output file:
+          #{node.path}.
+          The file is present, but it has not been updated.
+          "''
+    end
+
     def transitive_deps_requiring_build(dag, root_node)
-      modified_since(dag, root_node.path, root_node.dependencies)
+      modified_since_depthwise(dag, root_node.path, root_node.dependencies)
     end
 
     def lookup(dag, dep)
       dag.nodes[dep.path.to_s] || dep
     end
 
-    def modified_since(dag, path, deps)
+    # @param [DirectedAcyclicPathGraph] dag
+    # @param [String] path
+    # @param [Array[Node]] deps
+    # @return [Array[Node]]
+    def modified_since_depthwise(dag, path, deps)
       actual_deps = deps.map { lookup(dag, _1) }
-
       grand_children = actual_deps.map do |dep|
-        modified_since(dag, dep.path, dep.dependencies)
+        modified_since_depthwise(dag, dep.path, dep.dependencies)
       end
       children = actual_deps.select do |dep|
-        if File.exist?(dep.path) && File.exist?(path)
-          File.mtime(dep.path) > File.mtime(path)
-        else
-          true
-        end
+        file_changed?(path, dep)
       end
       (grand_children + children).flatten
+    end
+
+    def file_changed?(path, dep)
+      if File.exist?(dep.path) && File.exist?(path)
+        File.mtime(dep.path) > File.mtime(path)
+      else
+        true
+      end
     end
 
     def die(reason)

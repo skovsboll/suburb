@@ -42,20 +42,32 @@ module Suburb
 
     # @param [DirectedAcyclicPathGraph] other_graph
     def merge!(other_graph)
-      other_graph.nodes.each do |node|
-        add_node(node.path)
-      end
-
       @root_path.ascend do |parent|
         @root_path = parent.realpath if parent == other_graph.root_path
+      end
+
+      other_graph.nodes.each do |path, node|
+        add_node(path)
+        node.dependencies.each do |dep|
+          add_dependency(path, dep.path)
+        end
       end
     end
 
     # @return [Array[Node]]
-    def missing_dependecies
+    def missing_dependencies
       @nodes.flat_map do |_, node|
         node.dependencies.select do |dep|
           !File.exist?(dep.path) && @nodes.none? { |_, other| other != node && other.path == dep.path }
+        end
+      end
+    end
+
+    # @return [Array[Node]]
+    def undeclared_dependencies
+      @nodes.flat_map do |_, node|
+        node.dependencies.select do |dep|
+          @nodes.none? { |_, other| other != node && other.path == dep.path }
         end
       end
     end
@@ -67,7 +79,7 @@ module Suburb
       from_node = @nodes[normalize_path(from_path).to_s]
       absolute_to_path = normalize_path(to_path).to_s
 
-      explain_outside_root_path!(path, absolute_to_path, root_path) unless @root_path.child_path?(absolute_to_path)
+      explain_outside_root_path!(to_path, absolute_to_path, root_path) unless @root_path.child_path?(absolute_to_path)
 
       to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path)
       from_node.add_dependency(to_node)
