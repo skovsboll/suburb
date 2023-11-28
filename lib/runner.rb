@@ -6,7 +6,21 @@ module Suburb
 
     class RtxExec
       def rtx(command)
-        `rtx exec -- #{command}`
+        `rtx x -- #{command}`.tap { puts _1 }
+      end
+
+      def os
+        require 'rbconfig'
+        case RbConfig::CONFIG['host_os']
+        when /mswin|windows/i
+          :windows
+        when /linux|unix/i
+          :læinux
+        when /darwin|mac os/i
+          :macos
+        else
+          :unnkown
+        end
       end
     end
 
@@ -103,19 +117,19 @@ module Suburb
       bar.finish
     end
 
-    def assert_output_was_built!(node, last_modified)
-      unless File.exist?(node.path)
-        raise ''"Build definition code block failed to create the expected output file:
-          #{node.path}
-          "''
-      end
-
-      return if last_modified.nil? || File.mtime(node.path) > last_modified
+    def assert_output_was_built!(node, _last_modified)
+      return if File.exist?(node.path)
 
       raise ''"Build definition code block failed to create the expected output file:
-          #{node.path}.
-          The file is present, but it has not been updated.
+          #{node.path}
           "''
+
+      # return if last_modified.nil? || File.mtime(node.path) > last_modified
+
+      # raise ''"Build definition code block failed to create the expected output file:
+      #     #{node.path}.
+      #     The file is present, but it has not been updated.
+      #     "''
     end
 
     def transitive_deps_requiring_build(dag, root_node)

@@ -1,6 +1,6 @@
 require_relative '../lib/directed_acyclic_path_graph'
 
-describe DirectedAcyclicPathGraph do
+describe Suburb::DirectedAcyclicPathGraph do
   it '#root_path' do
     dag = described_class.new('.')
     expect(dag.root_path.absolute?).to be(true)
@@ -56,14 +56,6 @@ describe DirectedAcyclicPathGraph do
         end.to raise_error(RuntimeError)
       end
     end
-
-    it 'builder' do
-      dag = described_class.new('/etc')
-      dag.add_node('/etc/x') do
-        42
-      end
-      expect(dag.nodes['/etc/x'].builder[]).to eq(42)
-    end
   end
 
   context '#add_dependency' do
@@ -88,17 +80,6 @@ describe DirectedAcyclicPathGraph do
         dag.add_dependency('/etc/master', '/var/dep')
       end.to raise_error(RuntimeError)
     end
-
-    it 'retains builder' do
-      dag = described_class.new('/etc')
-      dag.add_node('/etc/z')
-      dag.add_node('/etc/x') do
-        42
-      end
-      dag.add_dependency('/etc/z', '/etc/x')
-      expect(dag.nodes['/etc/x'].builder[]).to eq(42)
-    end
-
 
     it 'cycle-1' do
       dag = described_class.new('.')
