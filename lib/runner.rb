@@ -66,7 +66,11 @@ module Suburb
                transitive_deps_requiring_build(dag, root_node)
              end
 
-      execute_nodes_in_order(subu_spec, deps + [root_node], force:)
+      if deps.any?
+        execute_nodes_in_order(subu_spec, deps + [root_node], force:)
+      else
+        puts 'No files require rebuilding.'
+      end
     end
 
     # @param [DSL::Root] subu_spec
@@ -79,7 +83,6 @@ module Suburb
         last_modified = maybe_last_modified(node)
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
-        puts({ ins:, outs: })
         RtxExec.new.instance_exec(ins, outs, &builder)
         assert_output_was_built!(node, last_modified)
       end
