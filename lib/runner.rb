@@ -1,12 +1,27 @@
 # frozen_string_literal: true
 
+require_relative './err'
+
 module Suburb
   class Runner
     require 'pathname'
 
+    def initialize
+      @log = TTY::Logger.new
+    end
+
     class RtxExec
+      require 'tty-logger'
+      require 'tty-command'
+
+      def initialize
+        @cmd = TTY::Command.new
+      end
+
       def rtx(command)
-        `rtx x -- #{command}`.tap { puts _1 }
+        @cmd.run('rtx', 'x', '--', command) do |_out, err|
+          raise Suburb.Err, err if err
+        end
       end
 
       def os
@@ -29,6 +44,8 @@ module Suburb
         die("No subu.rb found defining target file '#{target_file_path}' found")
 
       run_subu_spec(subu_rb, target_file_path, force:)
+    rescue Suburb::Err => e
+      @log.error e.message
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false)
@@ -48,8 +65,10 @@ module Suburb
       end
 
       unless dag.missing_dependencies.none?
-        raise ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
-        #{dag.missing_dependencies.map(&:original_path)}
+        raise Suburb::Err, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
+
+        #{dag.missing_dependencies.map(&:original_path).map(&:to_s).join("\n")}
+
         "''
       end
 
@@ -71,7 +90,7 @@ module Suburb
     # @param [Boolean] force
     def execute(dag, subu_spec, target_file_path, force: false)
       target = Pathname.new(target_file_path).expand_path
-      raise "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
+      raise Suburb::Err, "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
 
       root_node = dag.nodes[target.to_s]
       deps = if force
@@ -83,7 +102,7 @@ module Suburb
       if deps.any?
         execute_nodes_in_order(subu_spec, deps + [root_node], force:)
       else
-        puts 'No files require rebuilding.'
+        @log.success 'No files require rebuilding.'
       end
     end
 
@@ -120,7 +139,7 @@ module Suburb
     def assert_output_was_built!(node, _last_modified)
       return if File.exist?(node.path)
 
-      raise ''"Build definition code block failed to create the expected output file:
+      raise Suburb::Err, ''"Build definition code block failed to create the expected output file:
           #{node.path}
           "''
 
@@ -164,7 +183,7 @@ module Suburb
     end
 
     def die(reason)
-      warn reason
+      @log.error reason
       exit 1
     end
   end
