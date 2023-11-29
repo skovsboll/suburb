@@ -119,6 +119,7 @@ GEM
     tty-command (0.10.1)
       pastel (~> 0.8)
     tty-cursor (0.7.1)
+    tty-link (0.1.1)
     tty-logger (0.6.0)
       pastel (~> 0.8)
     tty-progressbar (0.18.2)
@@ -142,6 +143,7 @@ DEPENDENCIES
   ruby-lsp
   solargraph
   tty-command
+  tty-link
   tty-logger
   tty-progressbar
 

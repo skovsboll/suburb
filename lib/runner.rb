@@ -1,26 +1,37 @@
 # frozen_string_literal: true
 
 require_relative './err'
+require 'tty-logger'
+require 'tty-command'
+require 'tty-link'
+
 
 module Suburb
   class Runner
     require 'pathname'
 
     def initialize
-      @log = TTY::Logger.new
+      @log = TTY::Logger.new do |config|
+        config.output = File.open("suburb.log", "w")
+      end
     end
 
     class RtxExec
-      require 'tty-logger'
-      require 'tty-command'
 
-      def initialize
-        @cmd = TTY::Command.new
+      def initialize(log)
+        @log = log        
+        @cmd = TTY::Command.new(output: @log, color: false, uuid: false)
       end
 
       def rtx(command)
-        @cmd.run('rtx', 'x', '--', command) do |_out, err|
-          raise Suburb.Err, err if err
+        @cmd.run("rtx x -- #{command}") do |out, err|
+          raise Err, err if err
+        end
+      end
+
+      def sh(command)
+        @cmd.run(command) do |out, err|
+          raise Err, err if err
         end
       end
 
@@ -30,7 +41,7 @@ module Suburb
         when /mswin|windows/i
           :windows
         when /linux|unix/i
-          :læinux
+          :linux
         when /darwin|mac os/i
           :macos
         else
@@ -41,11 +52,10 @@ module Suburb
 
     def run(target_file_path, force: false)
       subu_rb = find_subu_rb(target_file_path) or
-        die("No subu.rb found defining target file '#{target_file_path}' found")
+        raise Err, "No subu.rb found defining target file '#{target_file_path}' found"
 
       run_subu_spec(subu_rb, target_file_path, force:)
-    rescue Suburb::Err => e
-      @log.error e.message
+      TTY::Logger.new.success "Complete log: cat ./suburb.log"
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false)
@@ -102,7 +112,7 @@ module Suburb
       if deps.any?
         execute_nodes_in_order(subu_spec, deps + [root_node], force:)
       else
-        @log.success 'No files require rebuilding.'
+        @log.success 'All files up to date.'
       end
     end
 
@@ -116,8 +126,10 @@ module Suburb
         last_modified = maybe_last_modified(node)
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
-        RtxExec.new.instance_exec(ins, outs, &builder)
+        RtxExec.new(@log).instance_exec(ins, outs, &builder)        
         assert_output_was_built!(node, last_modified)
+      rescue RuntimeError => e
+        raise Err, e
       end
     end
 
@@ -180,11 +192,6 @@ module Suburb
       else
         true
       end
-    end
-
-    def die(reason)
-      @log.error reason
-      exit 1
     end
   end
 end

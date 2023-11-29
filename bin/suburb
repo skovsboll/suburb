@@ -8,11 +8,25 @@ require_relative '../lib/dsl/root'
 require_relative '../lib/runner'
 require 'prettyprint'
 require 'tty-progressbar'
+require 'tty-logger'
 
-args = ARGV.group_by { _1 =~ /^-/ }
-raise 'no file task given' unless args[nil]
+begin
+  args = ARGV.group_by { _1 =~ /^-/ }
+  raise Suburb::Err, 'No file task given.' unless args[nil]
 
-runner = Suburb::Runner.new
-args[nil].each do |file|
-  runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
+  runner = Suburb::Runner.new
+  args[nil].each do |file|
+    runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
+  end
+rescue Suburb::Err => e
+  log = TTY::Logger.new(color: false)
+  log.error e
+  log.info "Complete log: cat ./suburb.log"
+
+  log.info """
+  Usage:
+
+  suburb <path-of-file-to-build> [-f|--force]
+
+  """
 end
