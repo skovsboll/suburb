@@ -2,15 +2,15 @@
 
 source 'https://rubygems.org'
 
-gem "tty-progressbar"
-gem "tty-logger"
-gem "tty-command"
-gem "tty-link"
+gem 'tty-command'
+gem 'tty-link'
+gem 'tty-logger'
+gem 'tty-progressbar'
 
 group :development, :test do
   gem 'guard'
-  gem 'guard-rspec'
+  gem 'guard-rspec', require: false
   gem 'rspec'
-  gem 'solargraph'
-  gem 'ruby-lsp'
+  gem "ruby-lsp", require: false
+  gem 'rubocop', require: false
 end
