@@ -3,21 +3,21 @@
 require 'rbconfig'
 
 module Suburb
-  class Exec
-    def initialize(log)
-      @log = log
-      @cmd = TTY::Command.new(output: @log, color: false, uuid: false)
-    end
+  class ShellExec
 
-    def rtx(command)
-      @cmd.run("rtx x -- #{command}") do |_out, err|
-        raise Err, err if err
-      end
+    def initialize(log)
+      @cmd = TTY::Command.new(output: log, color: false, uuid: false)
     end
 
     def sh(command)
       @cmd.run(command) do |_out, err|
-        raise Err, err if err
+        raise Suburb::RuntimeError, err if err
+      end
+    end
+
+    def rtx(command)
+      @cmd.run("rtx x -- #{command}") do |_out, err|
+        raise Suburb::RuntimeError, err if err
       end
     end
 
@@ -30,8 +30,9 @@ module Suburb
       when /darwin|mac os/i
         :macos
       else
-        :unnkown
+        :unknown
       end
     end
+
   end
 end

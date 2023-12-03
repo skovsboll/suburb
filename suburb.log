@@ -1,4 +1,1 @@
-[81160f72] Running rtx x -- zip /Users/soren/code/suburb/scenarios/app.zip /Users/soren/code/suburb/scenarios/src/generated_code/api.rb
-[81160f72] 	updating: Users/soren/code/suburb/scenarios/src/generated_code/api.rb
-[81160f72] 	 (deflated 81%)
-[81160f72] Finished in 0.241 seconds with exit status 0 (successful)
+[32m✔[0m [32msuccess[0m All files up to date.    

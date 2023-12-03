@@ -12,13 +12,13 @@ require 'tty-logger'
 
 begin
   args = ARGV.group_by { _1 =~ /^-/ }
-  raise Suburb::Err, 'No file task given.' unless args[nil]
+  raise Suburb::RuntimeError, 'No file task given.' unless args[nil]
 
   runner = Suburb::Runner.new
   args[nil].each do |file|
     runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
   end
-rescue Suburb::Err => e
+rescue Suburb::RuntimeError => e
   log = TTY::Logger.new(color: false)
   log.error e
   log.info "Complete log: cat ./suburb.log"

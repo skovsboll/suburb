@@ -1,28 +1,28 @@
 # frozen_string_literal: true
 
-require_relative './err'
-require_relative './exec'
+require_relative './runtime_error'
+require_relative './shell_exec'
 require 'tty-logger'
 require 'tty-command'
 require 'tty-link'
-
+require 'pathname'
 
 module Suburb
   class Runner
-    require 'pathname'
 
     def initialize
-      @log = TTY::Logger.new do |config|
+      @log_file = TTY::Logger.new do |config|
         config.output = File.open("suburb.log", "w")
       end
+      @terminal_output = TTY::Logger.new
     end
 
     def run(target_file_path, force: false)
       subu_rb = find_subu_rb(target_file_path) or
-      raise Err, "No subu.rb found defining target file '#{target_file_path}' found"
+      raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}' found"
 
       run_subu_spec(subu_rb, target_file_path, force:)
-      TTY::Logger.new.success "Complete log: cat ./suburb.log"
+      TTY::Logger.new.info "Complete log: cat ./suburb.log"
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false)
@@ -79,7 +79,8 @@ module Suburb
       if deps.any?
         execute_nodes_in_order(subu_spec, deps + [root_node], force:)
       else
-        @log.success 'All files up to date.'
+        @terminal_output.success 'All files up to date.'
+        @log_file.success 'All files up to date.'
       end
     end
 
@@ -93,10 +94,10 @@ module Suburb
         last_modified = maybe_last_modified(node)
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
-        Exec.new(@log).instance_exec(ins, outs, &builder)
+        ShellExec.new(@log_file).instance_exec(ins, outs, &builder)
         assert_output_was_built!(node, last_modified)
-      rescue RuntimeError => e
-        raise Err, e
+      rescue ::RuntimeError => e
+        raise Suburb::RuntimeError, e
       end
     end
 
