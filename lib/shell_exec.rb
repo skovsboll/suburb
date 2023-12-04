@@ -4,21 +4,19 @@ require 'rbconfig'
 
 module Suburb
   class ShellExec
-
     def initialize(log)
       @cmd = TTY::Command.new(output: log, color: false, uuid: false)
     end
 
     def sh(command)
-      @cmd.run(command) do |_out, err|
-        raise Suburb::RuntimeError, err if err
-      end
+      out, = @cmd.run(command)
+      out.strip
+    rescue TTY::Command::ExitError => e
+      raise Suburb::RuntimeError, e.message
     end
 
     def rtx(command)
-      @cmd.run("rtx x -- #{command}") do |_out, err|
-        raise Suburb::RuntimeError, err if err
-      end
+      sh "rtx x -- #{command}"
     end
 
     def os
@@ -33,6 +31,5 @@ module Suburb
         :unknown
       end
     end
-
   end
 end

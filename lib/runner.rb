@@ -9,48 +9,47 @@ require 'pathname'
 
 module Suburb
   class Runner
-
     def initialize
       @log_file = TTY::Logger.new do |config|
-        config.output = File.open("suburb.log", "w")
+        config.output = File.open('suburb.log', 'w')
       end
       @terminal_output = TTY::Logger.new
     end
 
     def run(target_file_path, force: false)
       subu_rb = find_subu_rb(target_file_path) or
-      raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}' found"
+        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}' found"
 
       run_subu_spec(subu_rb, target_file_path, force:)
-      TTY::Logger.new.info "Complete log: cat ./suburb.log"
+      TTY::Logger.new.info 'Complete log: cat ./suburb.log'
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false)
       spec = DSL::Root.new
       spec.instance_eval(File.read(subu_rb))
-      dag = spec.to_dag(subu_rb.dirname)
+      graph = spec.to_dependency_graph(subu_rb.dirname)
 
-      dag.undeclared_dependencies.each do |dep|
+      graph.undeclared_dependencies.each do |dep|
         maybe_subu_rb = find_subu_rb(dep.path)
-        next unless maybe_subu_rb && maybe_subu_rb.dirname != dag.root_path
+        next unless maybe_subu_rb && maybe_subu_rb.dirname != graph.root_path
 
         other_spec = DSL::Root.new
         other_spec.instance_eval(File.read(maybe_subu_rb))
-        other_dag = other_spec.to_dag(maybe_subu_rb.dirname)
-        dag.merge!(other_dag)
+        other_graph = other_spec.to_dependency_graph(maybe_subu_rb.dirname)
+        graph.merge!(other_graph)
         spec.merge!(other_spec)
       end
 
-      unless dag.missing_dependencies.none?
+      unless graph.missing_dependencies.none?
         raise Suburb::Err, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
 
-        #{dag.missing_dependencies.map(&:original_path).map(&:to_s).join("\n")}
+        #{graph.missing_dependencies.map(&:original_path).map(&:to_s).join("\n")}
 
         "''
       end
 
-      execute dag, spec, target_file_path, force:
-        end
+      execute graph, spec, target_file_path, force:
+    end
 
     # @param [String] file_path
     # @return [Root|NilClass]
@@ -61,20 +60,20 @@ module Suburb
       end
     end
 
-    # @param [DirectedAcyclicPathGraph] dag
+    # @param [DependencyGraph] graph
     # @param [DSL::Root] _subu_spec
     # @param [String] target_file_path
     # @param [Boolean] force
-    def execute(dag, subu_spec, target_file_path, force: false)
+    def execute(graph, subu_spec, target_file_path, force: false)
       target = Pathname.new(target_file_path).expand_path
-      raise Suburb::Err, "No suburb definition for #{target}" unless dag.nodes.include? target.to_s
+      raise Suburb::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
 
-      root_node = dag.nodes[target.to_s]
+      root_node = graph.nodes[target.to_s]
       deps = if force
-        root_node.all_dependencies_depthwise.map { lookup(dag, _1) }
-      else
-        transitive_deps_requiring_build(dag, root_node)
-      end
+               root_node.all_dependencies_depthwise.map { lookup(graph, _1) }
+             else
+               transitive_deps_requiring_build(graph, root_node)
+             end
 
       if deps.any?
         execute_nodes_in_order(subu_spec, deps + [root_node], force:)
@@ -94,7 +93,9 @@ module Suburb
         last_modified = maybe_last_modified(node)
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
-        ShellExec.new(@log_file).instance_exec(ins, outs, &builder)
+        Dir.chdir(node.root_path) do
+          ShellExec.new(@log_file).instance_exec(ins, outs, &builder)
+        end
         assert_output_was_built!(node, last_modified)
       rescue ::RuntimeError => e
         raise Suburb::RuntimeError, e
@@ -131,22 +132,22 @@ module Suburb
       #     "''
     end
 
-    def transitive_deps_requiring_build(dag, root_node)
-      modified_since_depthwise(dag, root_node.path, root_node.dependencies)
+    def transitive_deps_requiring_build(graph, root_node)
+      modified_since_depthwise(graph, root_node.path, root_node.dependencies)
     end
 
-    def lookup(dag, dep)
-      dag.nodes[dep.path.to_s] || dep
+    def lookup(graph, dep)
+      graph.nodes[dep.path.to_s] || dep
     end
 
-    # @param [DirectedAcyclicPathGraph] dag
+    # @param [DependencyGraph] graph
     # @param [String] path
     # @param [Array[Node]] deps
     # @return [Array[Node]]
-    def modified_since_depthwise(dag, path, deps)
-      actual_deps = deps.map { lookup(dag, _1) }
+    def modified_since_depthwise(graph, path, deps)
+      actual_deps = deps.map { lookup(graph, _1) }
       grand_children = actual_deps.map do |dep|
-        modified_since_depthwise(dag, dep.path, dep.dependencies)
+        modified_since_depthwise(graph, dep.path, dep.dependencies)
       end
       children = actual_deps.select do |dep|
         file_changed?(path, dep)

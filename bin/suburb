@@ -3,7 +3,6 @@
 # frozen_string_literal: true
 
 require_relative '../lib/node'
-require_relative '../lib/directed_acyclic_path_graph'
 require_relative '../lib/dsl/root'
 require_relative '../lib/runner'
 require 'prettyprint'
@@ -19,14 +18,14 @@ begin
     runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
   end
 rescue Suburb::RuntimeError => e
-  log = TTY::Logger.new(color: false)
+  log = TTY::Logger.new
   log.error e
-  log.info "Complete log: cat ./suburb.log"
+  log.info 'Complete log: cat ./suburb.log'
 
-  log.info """
+  log.info ''"
   Usage:
 
   suburb <path-of-file-to-build> [-f|--force]
 
-  """
+  "''
 end

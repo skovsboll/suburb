@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative './file'
+require_relative '../dependency_graph'
 
 module Suburb
   module DSL
@@ -17,14 +18,14 @@ module Suburb
         files << DSL::File.new(outs, ins, &block)
       end
 
-      def to_dag(root_path)
-        dag = DirectedAcyclicPathGraph.new(root_path)
+      def to_dependency_graph(root_path)
+        dependencies = Suburb::DependencyGraph.new(root_path)
         files.each do |f|
           f.outs.each do |out|
-            add_out(dag, out, f.ins, &f.builder)
+            add_out(dependencies, out, f.ins, &f.builder)
           end
         end
-        dag
+        dependencies
       end
 
       def merge!(other_spec)
@@ -32,38 +33,38 @@ module Suburb
         @builders.merge!(other_spec.builders)
       end
 
-      def add_out(dag, out, ins, &builder)
+      def add_out(dependencies, out, ins, &builder)
         case out
         in Proc => proc
           ins
-            .map { ::File.expand_path(_1, dag.root_path) }
+            .map { ::File.expand_path(_1, dependencies.root_path) }
             .map { proc.call(Pathname.new(_1)) }
             .each do |out_|
-              dag.add_node(out_)
+              dependencies.add_path(out_)
               builders[out_] = builder
               ins.each do |in_|
-                add_in(dag, in_, out_)
+                add_in(dependencies, in_, out_)
               end
             end
         in String => out_
-          node = dag.add_node(out_)
+          node = dependencies.add_path(out_)
           builders[node.path.to_s] = builder
           ins.each do |in_|
-            add_in(dag, in_, out_)
+            add_in(dependencies, in_, out_)
           end
         end
       end
 
-      def add_in(dag, in_, out)
-        path = ::File.expand_path(in_, dag.root_path)
+      def add_in(dependencies, in_, out)
+        path = ::File.expand_path(in_, dependencies.root_path)
 
         if is_glob(path)
           Dir.glob(path) do |expanded|
             fn = Pathname.new(expanded).basename
-            dag.add_dependency(out, expanded) if fn != 'subu.rb'
+            dependencies.add_dependency(out, expanded) if fn != 'subu.rb'
           end
         else
-          dag.add_dependency(out, path)
+          dependencies.add_dependency(out, path)
         end
       end
 
