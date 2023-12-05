@@ -73,7 +73,7 @@ class Command
     if params[:help]
       print help
     elsif params.errors.any?
-      puts params.errors.summary, ''
+      @terminal_output.error params.errors.summary
       print help
     else
       run_suburb

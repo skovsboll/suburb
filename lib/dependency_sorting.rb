@@ -12,23 +12,23 @@ module DependencySorting
 
   # @param [DependencyGraph] graph
   # @param [Node] node
-  # @return [Node] The node that has a build definition, if it is registered
-  def lookup(graph, node)
-    graph.nodes[node.path.to_s] || node
-  end
-
-
-  # @param [DependencyGraph] graph
-  # @param [Node] node
   # @return [Array[Node]] all dependencies of the node, including transitive dependencies
   def transitive_dependencies(graph, node)
     deps = node
       .dependencies
       .map { lookup(graph, _1) }
     
-    deps + deps
-      .flat_map { transitive_dependencies(graph, _1)}
+    deps
+      .flat_map { transitive_dependencies(graph, _1)} + deps
   end
+
+  # @param [DependencyGraph] graph
+  # @param [Node] node
+  # @return [Node] The node that has a build definition, if it is registered
+  def lookup(graph, node)
+    graph.nodes[node.path.to_s] || node
+  end
+
 
   # @param [DependencyGraph] graph
   # @param [Node] node
