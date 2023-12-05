@@ -1,1 +1,0 @@
-level=error message="No subu.rb found defining target file '/Users/sosko/poc/ruby/suburb/wlekj' found" backtrace="/Users/sosko/poc/ruby/suburb/lib/runner.rb:25:in `run',bin/suburb:89:in `block in run_suburb',bin/suburb:88:in `each',bin/suburb:88:in `run_suburb',bin/suburb:81:in `run',bin/suburb:102:in `<main>'"

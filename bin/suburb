@@ -10,10 +10,6 @@ require 'tty-progressbar'
 require 'tty-option'
 require 'tty-logger'
 
-Signal.trap('TERM') do
-  puts 'Terminating...'
-end
-
 class Command
   include TTY::Option
 
@@ -33,17 +29,19 @@ class Command
     no_command
 
     example <<~EOS
-      Build website
-        $ suburb dist/index.html
+      Build and watch website
+        $ suburb -w dist/index.html
 
-      Run tests
-        $ suburb test-results.txt
+      Run tests, even if no dependencies changed
+        $ suburb -f test-results.txt
+
+      Clean (remove) file all dependencies
+        $ suburb --clean
     EOS
   end
 
   argument :files do
-    required
-    arity one_or_more
+    arity zero_or_more
     desc 'The relative path(s) of the file(s) you want to build.'
   end
 
@@ -86,14 +84,17 @@ class Command
     begin
       runner = Suburb::Runner.new(@log_file, @terminal_output)
       Array(params[:files]).each do |file|
-        runner.run(File.expand_path(file), force: params[:force])
+        if params[:clean]
+          runner.clean(File.expand_path(file))
+        else
+          runner.run(File.expand_path(file), force: params[:force])
+        end
       end
     rescue Suburb::RuntimeError => e
       @log_file.error e
       @terminal_output.error e.message
-
-      @terminal_output.info 'Complete log: cat ./suburb.log'
     end
+    @terminal_output.info 'Complete log: cat ./suburb.log'
   end
 end
 

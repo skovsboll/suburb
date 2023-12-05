@@ -22,13 +22,19 @@ module Suburb
 
     def run(target_file_path, force: false)
       subu_rb = find_subu_rb(target_file_path) or
-        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}' found"
+        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}'"
 
-      run_subu_spec(subu_rb, target_file_path, force:)
-      TTY::Logger.new.info 'Complete log: cat ./suburb.log'
+      run_subu_spec(subu_rb, target_file_path, force:, clean: false)
     end
 
-    def run_subu_spec(subu_rb, target_file_path, force: false)
+    def clean(target_file_path)
+      subu_rb = find_subu_rb(target_file_path) or
+        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}'"
+
+      run_subu_spec(subu_rb, target_file_path, force: false, clean: true)
+    end
+
+    def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
       spec = DSL::Spec.new
       spec.instance_eval(File.read(subu_rb))
       graph = spec.to_dependency_graph(subu_rb.dirname)
@@ -43,7 +49,7 @@ module Suburb
         "''
       end
 
-      execute graph, spec, target_file_path, force:
+      execute graph, spec, target_file_path, force:, clean:
     end
 
     def discover_sub_graphs!(graph, spec)
@@ -72,19 +78,19 @@ module Suburb
     # @param [DSL::Root] _subu_spec
     # @param [String] target_file_path
     # @param [Boolean] force
-    def execute(graph, subu_spec, target_file_path, force: false)
+    def execute(graph, subu_spec, target_file_path, force: false, clean: false)
       target = Pathname.new(target_file_path).expand_path
       raise Suburb::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
 
       root_node = graph.nodes[target.to_s]
-      deps = if force
+      deps = if force || clean
                root_node.all_dependencies_depthwise.map { lookup(graph, _1) }
              else
                transitive_deps_requiring_build(graph, root_node)
              end
 
       if deps.any?
-        execute_nodes_in_order(subu_spec, deps + [root_node])
+        execute_nodes_in_order(subu_spec, deps + [root_node], clean:)
       else
         @terminal_output.success 'All files up to date.'
         @log_file.success 'All files up to date.'
@@ -93,9 +99,9 @@ module Suburb
 
     # @param [DSL::Root] subu_spec
     # @param [Array[Node]] nodes
-    def execute_nodes_in_order(subu_spec, nodes)
+    def execute_nodes_in_order(subu_spec, nodes, clean: false)
       builders_executed = []
-      with_progress(nodes) do |node|
+      with_progress(nodes, clean:) do |node|
         builder = subu_spec.builders[node.path.to_s]
         next unless builder || builders_executed.include?(builder)
 
@@ -103,11 +109,17 @@ module Suburb
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
         log = node.stdout ? @composite_log : @log_file
+        if clean
+          outs.each do |out_|
+            File.delete(out_) if File.exist?(out_)
+          end
+        else
         Dir.chdir(node.root_path) do
           ShellExec.new(log).instance_exec(ins, outs, &builder)
         end
+      end
         builders_executed << builder
-        assert_output_was_built!(node, last_modified)
+        assert_output_was_built!(node, last_modified) unless clean
       rescue ::RuntimeError => e
         raise Suburb::RuntimeError, e
       end
@@ -119,9 +131,9 @@ module Suburb
       (File.mtime(node.path) if File.exist?(node.path))
     end
 
-    def with_progress(nodes, &block)
-      bar = TTY::ProgressBar::Multi.new("Building #{nodes.last.path} [:bar]", total: nodes.size)
-      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename} :percent", total: 1)] }
+    def with_progress(nodes, clean: false, &block)
+      bar = TTY::ProgressBar::Multi.new("#{clean ? 'Cleaning' : 'Building'} #{nodes.last.path} [:bar]", total: nodes.size)
+      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.path.basename}", total: 1)] }
       nodes_with_bars.each do |node, sub_bar|
         block[node]
         sub_bar.advance

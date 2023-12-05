@@ -7,7 +7,7 @@ module DependencySorting
   # @param [Node] node
   # @return [Array[Node]] a flat list of nodes to build, in order
   def transitive_deps_requiring_build(graph, node)
-    modified_since_depthwise(graph, node.path, node.dependencies)
+    modified_since_depthwise(graph, node)
   end
 
   # @param [DependencyGraph] graph
@@ -17,19 +17,27 @@ module DependencySorting
     graph.nodes[node.path.to_s] || node
   end
 
+
   # @param [DependencyGraph] graph
-  # @param [String] path
-  # @param [Array[Node]] deps
+  # @param [Node] node
+  # @return [Array[Node]] all dependencies of the node, including transitive dependencies
+  def transitive_dependencies(graph, node)
+    deps = node
+      .dependencies
+      .map { lookup(graph, _1) }
+    
+    deps + deps
+      .flat_map { transitive_dependencies(graph, _1)}
+  end
+
+  # @param [DependencyGraph] graph
+  # @param [Node] node
   # @return [Array[Node]]
-  def modified_since_depthwise(graph, path, deps)
-    actual_deps = deps.map { lookup(graph, _1) }
-    grand_children = actual_deps.map do |dep|
-      modified_since_depthwise(graph, dep.path, dep.dependencies)
-    end
-    children = actual_deps.select do |dep|
-      output_file_needs_building?(path, dep.path)
-    end
-    (grand_children + children).flatten
+  def modified_since_depthwise(graph, node)
+    transitive_dependencies(graph, node)
+      .select { |dep_node| 
+        output_file_needs_building?(node.path.to_s, dep_node.path.to_s) 
+      }
   end
 
   # @param [String] path
