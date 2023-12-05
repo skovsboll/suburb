@@ -135,7 +135,7 @@ module Suburb
     def assert_output_was_built!(node, _last_modified)
       return if File.exist?(node.path)
 
-      raise Suburb::Err, ''"Build definition code block failed to create the expected output file:
+      raise Suburb::RuntimeError, ''"Build definition code block failed to create the expected output file:
           #{node.path}
           "''
     end
