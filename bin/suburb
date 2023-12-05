@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require_relative '../lib/node'
-require_relative '../lib/dsl/root'
+require_relative '../lib/dsl/spec'
 require_relative '../lib/runner'
 require 'prettyprint'
 require 'tty-progressbar'

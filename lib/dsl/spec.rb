@@ -5,7 +5,7 @@ require_relative '../dependency_graph'
 
 module Suburb
   module DSL
-    class Root
+    class Spec
       def files
         @files ||= []
       end
@@ -14,8 +14,8 @@ module Suburb
         @builders ||= {}
       end
 
-      def file(outs, ins: [], &block)
-        files << DSL::File.new(outs, ins, &block)
+      def file(outs, ins: [], stdout: false, &block)
+        files << DSL::File.new(outs, ins:, stdout:, &block)
       end
 
       def to_dependency_graph(root_path)
