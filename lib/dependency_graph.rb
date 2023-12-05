@@ -21,10 +21,10 @@ module Suburb
 
     # @param [String] path
     # @return [Node]
-    def add_path(path)
+    def add_path(path, stdout: false)
       absolute_path = normalize_path(path)
       explain_outside_root_path!(path, absolute_path, root_path) unless @root_path.child_path?(absolute_path)
-      node = Node.new(absolute_path, path, root_path)
+      node = Node.new(absolute_path, path, root_path, stdout:)
       @nodes[absolute_path.to_s] = node
       node
     end
@@ -82,7 +82,7 @@ module Suburb
 
       # explain_outside_root_path!(to_path, absolute_to_path, root_path) unless @root_path.child_path?(absolute_to_path)
 
-      to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path, root_path)
+      to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path, root_path, stdout: false)
       from_node.add_dependency(to_node)
 
       to_node

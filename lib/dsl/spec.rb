@@ -22,7 +22,7 @@ module Suburb
         dependencies = Suburb::DependencyGraph.new(root_path)
         files.each do |f|
           f.outs.each do |out|
-            add_out(dependencies, out, f.ins, &f.builder)
+            add_out(dependencies, out, f.ins, stdout: f.stdout, &f.builder)
           end
         end
         dependencies
@@ -33,24 +33,35 @@ module Suburb
         @builders.merge!(other_spec.builders)
       end
 
-      def add_out(dependencies, out, ins, &builder)
+      def add_out(dependencies, out, ins, stdout: false, &builder)
         case out
+
         in Proc => proc
           ins
             .map { ::File.expand_path(_1, dependencies.root_path) }
             .map { proc.call(Pathname.new(_1)) }
             .each do |out_|
-              dependencies.add_path(out_)
+              dependencies.add_path(out_, stdout:)
               builders[out_] = builder
               ins.each do |in_|
                 add_in(dependencies, in_, out_)
               end
             end
+
         in String => out_
-          node = dependencies.add_path(out_)
+          node = dependencies.add_path(out_, stdout:)
           builders[node.path.to_s] = builder
           ins.each do |in_|
             add_in(dependencies, in_, out_)
+          end
+
+        in Array => outs
+          outs.each do |out_|
+            node = dependencies.add_path(out_, stdout:)
+            builders[node.path.to_s] = builder
+            ins.each do |in_|
+              add_in(dependencies, in_, out_)
+            end
           end
         end
       end

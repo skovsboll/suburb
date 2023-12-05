@@ -4,6 +4,7 @@ require_relative './dependency_graph'
 require_relative './dependency_sorting'
 require_relative './runtime_error'
 require_relative './shell_exec'
+require_relative './composite_log'
 require 'tty-logger'
 require 'tty-command'
 require 'tty-link'
@@ -18,6 +19,7 @@ module Suburb
         config.output = File.open('suburb.log', 'w')
       end
       @terminal_output = TTY::Logger.new
+      @composite_log = CompositeLog.new(@log_file, @terminal_output)
     end
 
     def run(target_file_path, force: false)
@@ -84,7 +86,7 @@ module Suburb
              end
 
       if deps.any?
-        execute_nodes_in_order(subu_spec, deps + [root_node], force:)
+        execute_nodes_in_order(subu_spec, deps + [root_node])
       else
         @terminal_output.success 'All files up to date.'
         @log_file.success 'All files up to date.'
@@ -93,23 +95,28 @@ module Suburb
 
     # @param [DSL::Root] subu_spec
     # @param [Array[Node]] nodes
-    def execute_nodes_in_order(subu_spec, nodes, force: false)
+    def execute_nodes_in_order(subu_spec, nodes)
+      builders_executed = []
       with_progress(nodes) do |node|
         builder = subu_spec.builders[node.path.to_s]
-        next unless builder
+        next unless builder || builders_executed.include?(builder)
 
         last_modified = maybe_last_modified(node)
         ins = node.dependencies.map(&:path)
         outs = Array(node.path)
+        log = node.stdout ? @composite_log : @log_file
         Dir.chdir(node.root_path) do
-          ShellExec.new(@log_file).instance_exec(ins, outs, &builder)
+          ShellExec.new(log).instance_exec(ins, outs, &builder)
         end
+        builders_executed << builder
         assert_output_was_built!(node, last_modified)
       rescue ::RuntimeError => e
         raise Suburb::RuntimeError, e
       end
     end
 
+    # @param [Node] node
+    # @return [Time|NilClass]
     def maybe_last_modified(node)
       (File.mtime(node.path) if File.exist?(node.path))
     end

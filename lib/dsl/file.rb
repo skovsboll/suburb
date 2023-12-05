@@ -10,7 +10,7 @@ module Suburb
         @stdout = stdout
       end
 
-      attr_reader :outs, :ins, :builder
+      attr_reader :outs, :ins, :builder, :stdout
     end
   end
 end
