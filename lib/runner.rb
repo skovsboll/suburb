@@ -9,6 +9,7 @@ require 'tty-logger'
 require 'tty-command'
 require 'tty-link'
 require 'pathname'
+require 'uri'
 
 module Suburb
   class Runner
@@ -20,25 +21,46 @@ module Suburb
       @composite_log = CompositeLog.new(@log_file, @terminal_output)
     end
 
-    def run(target_file_path, force: false)
-      subu_rb = find_subu_rb(target_file_path) or
-        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}'"
-
-      run_subu_spec(subu_rb, target_file_path, force:, clean: false)
+    def run(target_path, force: false)
+      run_subu_spec(find_subu_spec!(target_path), target_path, force:, clean: false)
     end
 
-    def clean(target_file_path)
-      subu_rb = find_subu_rb(target_file_path) or
-        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_file_path}'"
+    def clean(target_path)
+      run_subu_spec(find_subu_spec!(target_path), target_path, force: false, clean: true)
+    end
 
-      run_subu_spec(subu_rb, target_file_path, force: false, clean: true)
+    def show_tree(target_path)
+      subu_rb = find_subu_spec!(target_path)
+
+      spec = DSL::Spec.new
+      spec.instance_eval(File.read(subu_rb))
+      graph = spec.to_dependency_graph(subu_rb.dirname)
+      discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
+
+      mermaid_source = <<~EOS
+        graph TD      
+        #{graph.nodes.map { mermaid(_2) }.join("") }
+      EOS
+
+      puts mermaid_source
+
+      @terminal_output.info TTY::Link.link_to('Mermaid', "https://mermaid-js.github.io/mermaid-live-editor/#/edit/#{URI::Parser.new.escape(mermaid_source)}")
+    end
+
+    def mermaid(node)
+      node.dependencies.flat_map { |dep| mermaid(dep) }.join("") + "\n" +
+      node.dependencies.map { |dep| "\t#{node.path.basename} --> #{dep.path.basename}"}.join("\n")
+    end
+
+    def find_subu_spec!(target_path)
+      find_subu_rb(target_path) or
+        raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
       spec = DSL::Spec.new
       spec.instance_eval(File.read(subu_rb))
       graph = spec.to_dependency_graph(subu_rb.dirname)
-
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
       # pp graph.nodes.map { [_2.path.to_s, _2.dependencies.map(&:path).map(&:to_s)] }.to_h

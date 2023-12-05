@@ -57,6 +57,12 @@ class Command
     desc 'Watch file and dependencies (including transitive) for changes and rebuild as needed.'
   end
 
+  flag :tree do
+    short '-t'
+    long '--show-tree'
+    desc 'Show a visual graph of the dependency tree.'
+  end
+
   flag :clean do
     short '-c'
     long '--clean'
@@ -84,10 +90,13 @@ class Command
     begin
       runner = Suburb::Runner.new(@log_file, @terminal_output)
       Array(params[:files]).each do |file|
+        file_path = File.expand_path(file)
         if params[:clean]
-          runner.clean(File.expand_path(file))
+          runner.clean(file_path)
+        elsif params[:tree]
+          runner.show_tree(file_path)
         else
-          runner.run(File.expand_path(file), force: params[:force])
+          runner.run(file_path, force: params[:force])
         end
       end
     rescue Suburb::RuntimeError => e
