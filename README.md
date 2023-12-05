@@ -25,15 +25,15 @@ A build definition allows declaring output files, input files and recipe to buil
 All targets are files. No phony targets (Make), not task targets (Rake), no _test_ or _run_ targets (Bazel).
 
 **Caches results.** 
-For now by file modification time, in the future by hash.
-Uses your folders
+For now, caches by file modification time. In the future, by file fingerprint/hash.
+Uses your project folders instead of relocating building to some exoctic temp dir. This also makes source maps and debug symbols point to your actual source locations. How nice is that? 
 
 **Only does one thing well.** 
-Relies on toolchain managers for what they are good at. Relies on package managers for what they are good at. 
+Relies on toolchain managers for what they are good at. Integrates by default with [RTX]() but you can choose another tools manager or install prerequisites and tools manually. 
+Relies on package managers for what they are good at. If a subproject is full of Rust code, use Cargo. If it's a web app, use Vite.
 
 **Non invasive.** 
-You can still work on your local machine like you are used to.
-
+You can still work on your local machine like you are used to. Run `pnpm run dev` or `rails s` or `cmake ..` without limitations.
 
 
 
