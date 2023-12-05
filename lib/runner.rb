@@ -14,11 +14,9 @@ module Suburb
   class Runner
     include DependencySorting
 
-    def initialize
-      @log_file = TTY::Logger.new do |config|
-        config.output = File.open('suburb.log', 'w')
-      end
-      @terminal_output = TTY::Logger.new
+    def initialize(log_file, terminal_output)
+      @log_file = log_file
+      @terminal_output = terminal_output
       @composite_log = CompositeLog.new(@log_file, @terminal_output)
     end
 

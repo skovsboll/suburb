@@ -7,25 +7,96 @@ require_relative '../lib/dsl/spec'
 require_relative '../lib/runner'
 require 'prettyprint'
 require 'tty-progressbar'
+require 'tty-option'
 require 'tty-logger'
 
-begin
-  args = ARGV.group_by { _1 =~ /^-/ }
-  raise Suburb::RuntimeError, 'No file task given.' unless args[nil]
-
-  runner = Suburb::Runner.new
-  args[nil].each do |file|
-    runner.run(File.expand_path(file), force: Array(args[0]).include?('-f'))
-  end
-rescue Suburb::RuntimeError => e
-  log = TTY::Logger.new
-  log.error e
-  log.info 'Complete log: cat ./suburb.log'
-
-  log.info ''"
-  Usage:
-
-  suburb <path-of-file-to-build> [-f|--force]
-
-  "''
+Signal.trap('TERM') do
+  puts 'Terminating...'
 end
+
+class Command
+  include TTY::Option
+
+  def initialize
+    super
+    @log_file = TTY::Logger.new do |config|
+      config.handlers = [[:stream, { output: File.open('suburb.log', 'w'), formatter: :text }]]
+    end
+    @terminal_output = TTY::Logger.new
+  end
+
+  usage do
+    program 'suburb'
+
+    desc 'The simplest build graph in the world'
+
+    no_command
+
+    example <<~EOS
+      Build website
+        $ suburb dist/index.html
+
+      Run tests
+        $ suburb test-results.txt
+    EOS
+  end
+
+  argument :files do
+    required
+    arity one_or_more
+    desc 'The relative path(s) of the file(s) you want to build.'
+  end
+
+  flag :force do
+    short '-f'
+    long '--force'
+    desc 'Force rebuilding file and all dependencies.'
+  end
+
+  flag :watch do
+    short '-w'
+    long '--watch'
+    desc 'Watch file and dependencies (including transitive) for changes and rebuild as needed.'
+  end
+
+  flag :clean do
+    short '-c'
+    long '--clean'
+    desc 'Delete file and all its (transitive) dependencies.'
+  end
+
+  flag :help do
+    short '-h'
+    long '--help'
+    desc 'Print usage'
+  end
+
+  def run
+    if params[:help]
+      print help
+    elsif params.errors.any?
+      puts params.errors.summary, ''
+      print help
+    else
+      run_suburb
+    end
+  end
+
+  def run_suburb
+    begin
+      runner = Suburb::Runner.new(@log_file, @terminal_output)
+      Array(params[:files]).each do |file|
+        runner.run(File.expand_path(file), force: params[:force])
+      end
+    rescue Suburb::RuntimeError => e
+      @log_file.error e
+      @terminal_output.error e.message
+
+      @terminal_output.info 'Complete log: cat ./suburb.log'
+    end
+  end
+end
+
+cmd = Command.new
+cmd.parse
+cmd.run

@@ -39,7 +39,7 @@ module Suburb
     def cp(ins, outs)
       unless ins.size == outs.size
         raise Suburb::RuntimeError,
-              "For the copy command to work, there must be an equal number of ins and outs. There are #{ins.size} ins and #{outs.size} outs. "
+              "For the 'cp' (copy) command to work, there must be an equal number of ins and outs. There are #{ins.size} ins and #{outs.size} outs. "
       end
 
       ins.zip(outs) do |in_, out_|

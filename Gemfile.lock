@@ -90,6 +90,7 @@ GEM
     tty-link (0.1.1)
     tty-logger (0.6.0)
       pastel (~> 0.8)
+    tty-option (0.3.0)
     tty-progressbar (0.18.2)
       strings-ansi (~> 0.2)
       tty-cursor (~> 0.7)
@@ -112,6 +113,7 @@ DEPENDENCIES
   tty-command
   tty-link
   tty-logger
+  tty-option
   tty-progressbar
 
 BUNDLED WITH
