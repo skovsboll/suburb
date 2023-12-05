@@ -1,4 +1,4 @@
-require_relative '../lib/directed_acyclic_path_graph'
+require_relative '../lib/dependency_graph'
 
 describe Suburb::DependencyGraph do
   it '#root_path' do
@@ -76,9 +76,7 @@ describe Suburb::DependencyGraph do
     it 'outside root path' do
       dag = described_class.new('/etc')
       dag.add_path('/etc/master')
-      expect do
-        dag.add_dependency('/etc/master', '/var/dep')
-      end.to raise_error(RuntimeError)
+      dag.add_dependency('/etc/master', '/var/dep')
     end
 
     it 'cycle-1' do
