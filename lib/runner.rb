@@ -12,6 +12,7 @@ require 'pathname'
 require 'uri'
 require 'digest/sha1'
 require 'base64'
+require "open-uri"
 
 module Suburb
   class Runner
@@ -40,17 +41,23 @@ module Suburb
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
       mermaid_source = <<~EOS
-        graph TD      
-        #{graph.nodes.map { mermaid(_2) }.join("\n") }
+        graph TD; #{graph.nodes.map { mermaid(_2) }.join(";") }
       EOS
 
-      encoded_data = Base64.encode64(mermaid_source)
-      @terminal_output.info TTY::Link.link_to('View Dependency Tree', "https://mermaid.ink/img/#{encoded_data}")
+      encoded_data = Base64.strict_encode64(mermaid_source)
+      image_url = "https://mermaid.ink/img/#{encoded_data}"
+      uri = URI.parse(image_url.strip)
+      image_binary = uri.read
+      encoded_image = Base64.encode64(image_binary)
+      width = 100
+      height = 20
+      puts "\x1B]1337;File=inline=1:#{encoded_image}\x07"
+      @terminal_output.info TTY::Link.link_to('View Dependency Tree in browser', image_url)
     end
 
     def mermaid(node)
       node.dependencies.flat_map { |dep| mermaid(dep) }  +
-      node.dependencies.map { |dep| "\t#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.basename}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.basename}]"}
+      node.dependencies.map { |dep| "#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.basename}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.basename}]"}
     end
 
     def find_subu_spec!(target_path)

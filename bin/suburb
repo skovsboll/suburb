@@ -90,7 +90,9 @@ class Command
     begin
       start_time = Time.new
       runner = Suburb::Runner.new(@log_file, @terminal_output)
-      Array(params[:files]).each do |file|
+      files = Array(params[:files])
+      if files.any?
+      files.each do |file|
         file_path = File.expand_path(file)
         if params[:clean]
           runner.clean(file_path)
@@ -100,6 +102,9 @@ class Command
           runner.run(file_path, force: params[:force])
         end
       end
+    else
+      print help
+    end
       @terminal_output.info "Completed in #{format_elapsed(start_time, Time.new)}."
       @terminal_output.info 'Log file: cat ./suburb.log'
     rescue Suburb::RuntimeError => e
