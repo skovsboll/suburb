@@ -12,7 +12,7 @@ require 'pathname'
 require 'uri'
 require 'digest/sha1'
 require 'base64'
-require "open-uri"
+require 'open-uri'
 
 module Suburb
   class Runner
@@ -41,23 +41,26 @@ module Suburb
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
       mermaid_source = <<~EOS
-        graph TD; #{graph.nodes.map { mermaid(_2) }.join(";") }
+        graph LR; #{graph.nodes.map { mermaid(_2) }.join(';')}
       EOS
 
       encoded_data = Base64.strict_encode64(mermaid_source)
-      image_url = "https://mermaid.ink/img/#{encoded_data}"
+      image_url = "https://mermaid.ink/img/#{encoded_data}?bgColor=798"
       uri = URI.parse(image_url.strip)
       image_binary = uri.read
       encoded_image = Base64.encode64(image_binary)
       width = 100
       height = 20
       puts "\x1B]1337;File=inline=1:#{encoded_image}\x07"
+      puts image_url
       @terminal_output.info TTY::Link.link_to('View Dependency Tree in browser', image_url)
     end
 
     def mermaid(node)
-      node.dependencies.flat_map { |dep| mermaid(dep) }  +
-      node.dependencies.map { |dep| "#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.basename}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.basename}]"}
+      node.dependencies.flat_map { |dep| mermaid(dep) } +
+        node.dependencies.map do |dep|
+          "#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.relative_path_from(Dir.pwd)}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.relative_path_from(Dir.pwd)}]"
+        end
     end
 
     def find_subu_spec!(target_path)
@@ -137,10 +140,10 @@ module Suburb
     def execute_nodes_in_order(subu_spec, nodes, clean: false)
       builders_executed = []
 
-      nodes_with_builder = nodes.select { |node|
+      nodes_with_builder = nodes.select do |node|
         builder = subu_spec.builders[node.path.to_s]
         builder && !builders_executed.include?(builder)
-      }
+      end
 
       with_progress(nodes_with_builder, clean:) do |node|
         last_modified = maybe_last_modified(node)
@@ -152,15 +155,18 @@ module Suburb
             File.delete(out_) if File.exist?(out_)
           end
         else
-        Dir.chdir(node.root_path) do
-          builder = subu_spec.builders[node.path.to_s]
-          ShellExec.new(log).instance_exec(ins, outs, &builder)
-          builders_executed << builder
+          Dir.chdir(node.root_path) do
+            FileUtils.mkdir_p node.path.dirname
+            builder = subu_spec.builders[node.path.to_s]
+            ShellExec.new(log).instance_exec(ins, outs, &builder)
+            builders_executed << builder
+          end
         end
-      end
         assert_output_was_built!(node, last_modified) unless clean
       rescue ::RuntimeError => e
         raise Suburb::RuntimeError, e
+      rescue Interrupt => e
+        raise Suburb::RuntimeError, 'The build was interrupted.'
       end
     end
 
@@ -171,7 +177,8 @@ module Suburb
     end
 
     def with_progress(nodes, clean: false, &block)
-      bar = TTY::ProgressBar::Multi.new("#{clean ? 'Cleaning' : 'Building'} #{nodes.last.original_path} [:bar]", total: nodes.size)
+      bar = TTY::ProgressBar::Multi.new("#{clean ? 'Cleaning' : 'Building'} #{nodes.last.original_path} [:bar]",
+                                        total: nodes.size)
       nodes_with_bars = nodes.map { [_1, bar.register("#{_1.original_path}", total: 1)] }
       nodes_with_bars.each do |node, sub_bar|
         block[node]

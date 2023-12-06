@@ -5,7 +5,7 @@ require 'rbconfig'
 module Suburb
   class ShellExec
     def initialize(log)
-      @cmd = TTY::Command.new(output: log, color: false, uuid: false)
+      @cmd = TTY::Command.new(output: log, color: true, uuid: false)
     end
 
     def sh(command)
