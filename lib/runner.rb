@@ -10,6 +10,8 @@ require 'tty-command'
 require 'tty-link'
 require 'pathname'
 require 'uri'
+require 'digest/sha1'
+require 'base64'
 
 module Suburb
   class Runner
@@ -39,17 +41,16 @@ module Suburb
 
       mermaid_source = <<~EOS
         graph TD      
-        #{graph.nodes.map { mermaid(_2) }.join("") }
+        #{graph.nodes.map { mermaid(_2) }.join("\n") }
       EOS
 
-      puts mermaid_source
-
-      @terminal_output.info TTY::Link.link_to('Mermaid', "https://mermaid-js.github.io/mermaid-live-editor/#/edit/#{URI::Parser.new.escape(mermaid_source)}")
+      encoded_data = Base64.encode64(mermaid_source)
+      @terminal_output.info TTY::Link.link_to('View Dependency Tree', "https://mermaid.ink/img/#{encoded_data}")
     end
 
     def mermaid(node)
-      node.dependencies.flat_map { |dep| mermaid(dep) }.join("") + "\n" +
-      node.dependencies.map { |dep| "\t#{node.path.basename} --> #{dep.path.basename}"}.join("\n")
+      node.dependencies.flat_map { |dep| mermaid(dep) }  +
+      node.dependencies.map { |dep| "\t#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.basename}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.basename}]"}
     end
 
     def find_subu_spec!(target_path)
