@@ -5,6 +5,11 @@ require_relative './dependency_sorting'
 require_relative './runtime_error'
 require_relative './shell_exec'
 require_relative './composite_log'
+require_relative './tree_visualizer'
+require_relative './discovery'
+require_relative './progress'
+require_relative './debug'
+
 require 'tty-logger'
 require 'tty-command'
 require 'tty-link'
@@ -17,6 +22,10 @@ require 'open-uri'
 module Suburb
   class Runner
     include DependencySorting
+    include TreeVisualizer
+    include Discovery
+    include Progress
+    include Debug
 
     def initialize(log_file, terminal_output)
       @log_file = log_file
@@ -32,47 +41,9 @@ module Suburb
       run_subu_spec(find_subu_spec!(target_path), target_path, force: false, clean: true)
     end
 
-    def show_tree(target_path)
-      subu_rb = find_subu_spec!(target_path)
-
-      spec = DSL::Spec.new
-      spec.instance_eval(File.read(subu_rb))
-      graph = spec.to_dependency_graph(subu_rb.dirname)
-      discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
-
-      mermaid_source = <<~EOS
-        graph LR; #{graph.nodes.map { mermaid(_2) }.uniq.join(';')}
-      EOS
-
-      encoded_data = Base64.strict_encode64(mermaid_source)
-      image_url = "https://mermaid.ink/img/#{encoded_data}?bgColor=798"
-      uri = URI.parse(image_url.strip)
-      image_binary = uri.read
-      encoded_image = Base64.encode64(image_binary)
-      width = 100
-      height = 20
-      puts "\x1B]1337;File=inline=1:#{encoded_image}\x07"
-      @terminal_output.info TTY::Link.link_to('View Dependency Tree in browser', image_url)
-    end
-
-    def mermaid(node)
-      node.dependencies.flat_map { |dep| mermaid(dep) } +
-        node.dependencies.map do |dep|
-          "#{Digest::SHA1.hexdigest(node.path.to_s)[0..8]}[#{node.path.relative_path_from(Dir.pwd)}]-->#{Digest::SHA1.hexdigest(dep.path.to_s)[0..8]}[#{dep.path.relative_path_from(Dir.pwd)}]"
-        end
-    end
-
     def find_subu_spec!(target_path)
       find_subu_rb(target_path) or
         raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
-    end
-
-    def pp_nodes(nodes)
-      if nodes.is_a? Hash
-        pp nodes.map { [_2.path.to_s, _2.dependencies.map(&:path).map(&:to_s)] }.to_h
-      else
-        pp nodes.map { [_1.path.to_s, _1.dependencies.map(&:path).map(&:to_s)] }.to_h
-      end
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
@@ -90,31 +61,6 @@ module Suburb
       end
 
       execute graph, spec, target_file_path, force:, clean:
-    end
-
-    def discover_sub_graphs!(graph, spec, already_visited: [])
-      graph.undeclared_dependencies.each do |dep|
-        maybe_subu_rb = find_subu_rb(dep.path)
-        next unless maybe_subu_rb && !already_visited.include?(maybe_subu_rb.dirname)
-
-        other_spec = DSL::Spec.new
-        other_spec.instance_eval(File.read(maybe_subu_rb))
-        other_graph = other_spec.to_dependency_graph(maybe_subu_rb.dirname)
-
-        discover_sub_graphs!(other_graph, other_spec, already_visited: already_visited + [maybe_subu_rb.dirname])
-
-        graph.merge!(other_graph)
-        spec.merge!(other_spec)
-      end
-    end
-
-    # @param [String] file_path
-    # @return [Root|NilClass]
-    def find_subu_rb(file_path)
-      Pathname.new(file_path).ascend do |parent|
-        maybe_subu = parent + 'subu.rb'
-        return maybe_subu.realpath if maybe_subu.exist?
-      end
     end
 
     # @param [DependencyGraph] graph
@@ -179,18 +125,6 @@ module Suburb
     # @return [Time|NilClass]
     def maybe_last_modified(node)
       (File.mtime(node.path) if File.exist?(node.path))
-    end
-
-    def with_progress(nodes, clean: false, &block)
-      bar = TTY::ProgressBar::Multi.new("#{clean ? 'Cleaning' : 'Building'} #{nodes.last.original_path} [:bar]",
-                                        total: nodes.size)
-      nodes_with_bars = nodes.map { [_1, bar.register("#{_1.original_path}", total: 1)] }
-      nodes_with_bars.each do |node, sub_bar|
-        block[node]
-        sub_bar.advance
-      end
-    ensure
-      bar.finish
     end
 
     def assert_output_was_built!(node, _last_modified)
