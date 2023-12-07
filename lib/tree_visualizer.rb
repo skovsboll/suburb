@@ -1,5 +1,11 @@
+require 'tty-link'
+
 module Suburb
   module TreeVisualizer
+    def iterm2?
+      TTY::Link.support_link?
+    end
+
     def show_tree_and_link(target_path)
       subu_rb = find_subu_spec!(target_path)
 
@@ -24,7 +30,7 @@ module Suburb
       encoded_image = Base64.strict_encode64(image_binary)
 
       # Print img to iterm2
-      puts "\x1B]1337;File=inline=1:#{encoded_image}\x07"
+      puts "\x1B]1337;File=inline=1;width=100:#{encoded_image}\x07"
 
       TTY::Link.link_to('View Dependency Tree in browser', image_url)
     end

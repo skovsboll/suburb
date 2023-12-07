@@ -97,7 +97,11 @@ class Command
         if params[:clean]
           runner.clean(file_path)
         elsif params[:tree]
-          @terminal_output.info runner.show_tree_and_link(file_path)
+          if runner.iterm2?
+            @terminal_output.info runner.show_tree_and_link(file_path)
+          else
+            @terminal_output.warn 'Run this in iTerm2 to show trees and links.'
+          end
         else
           runner.run(file_path, force: params[:force])
         end
@@ -110,12 +114,12 @@ class Command
   rescue Suburb::CyclicDependencyError => e
     @log_file.error e
     @terminal_output.error e.message
-    @terminal_output.info runner.show_graph_tree(e.graph)
+    @terminal_output.info runner.show_graph_tree(e.graph) if runner.iterm2?
+    @terminal_output.info "Errored after #{format_elapsed(start_time, Time.new)}."
+    @terminal_output.info 'Complete log: cat ./suburb.log'
   rescue Suburb::RuntimeError => e
     @log_file.error e
     @terminal_output.error e.message
-  ensure
-    end_time = Time.new
     @terminal_output.info "Errored after #{format_elapsed(start_time, Time.new)}."
     @terminal_output.info 'Complete log: cat ./suburb.log'
   end
