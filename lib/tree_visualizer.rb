@@ -24,7 +24,7 @@ module Suburb
       EOS
 
       encoded_data = Base64.strict_encode64(mermaid_source)
-      image_url = "https://mermaid.ink/img/#{encoded_data}?bgColor=798"
+      image_url = "https://mermaid.ink/img/#{encoded_data}?bgColor=585"
       uri = URI.parse(image_url.strip)
       image_binary = uri.read
       encoded_image = Base64.strict_encode64(image_binary)
