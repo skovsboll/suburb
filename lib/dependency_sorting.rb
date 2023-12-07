@@ -13,13 +13,18 @@ module DependencySorting
   # @param [DependencyGraph] graph
   # @param [Node] node
   # @return [Array[Node]] all dependencies of the node, including transitive dependencies
-  def transitive_dependencies(graph, node)
+  def transitive_dependencies(graph, node, already_visited: [])
+    if already_visited.include?(node.path.to_s)
+      raise Suburb::RuntimeError,
+            ''"Cyclic dependency detected: #{node.original_path}"''
+    end
+
     deps = node
-      .dependencies
-      .map { lookup(graph, _1) }
-    
+           .dependencies
+           .map { lookup(graph, _1) }
+
     deps
-      .flat_map { transitive_dependencies(graph, _1)} + deps
+      .flat_map { transitive_dependencies(graph, _1, already_visited: already_visited + [node.path.to_s]) } + deps
   end
 
   # @param [DependencyGraph] graph
@@ -29,15 +34,14 @@ module DependencySorting
     graph.nodes[node.path.to_s] || node
   end
 
-
   # @param [DependencyGraph] graph
   # @param [Node] node
   # @return [Array[Node]]
   def modified_since_depthwise(graph, node)
     transitive_dependencies(graph, node)
-      .select { |dep_node| 
-        output_file_needs_building?(node.path.to_s, dep_node.path.to_s) 
-      }
+      .select do |dep_node|
+        output_file_needs_building?(node.path.to_s, dep_node.path.to_s)
+      end
   end
 
   # @param [String] path

@@ -41,7 +41,7 @@ module Suburb
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
       mermaid_source = <<~EOS
-        graph LR; #{graph.nodes.map { mermaid(_2) }.join(';')}
+        graph LR; #{graph.nodes.map { mermaid(_2) }.uniq.join(';')}
       EOS
 
       encoded_data = Base64.strict_encode64(mermaid_source)
@@ -52,7 +52,6 @@ module Suburb
       width = 100
       height = 20
       puts "\x1B]1337;File=inline=1:#{encoded_image}\x07"
-      puts image_url
       @terminal_output.info TTY::Link.link_to('View Dependency Tree in browser', image_url)
     end
 
@@ -68,13 +67,19 @@ module Suburb
         raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
     end
 
+    def pp_nodes(nodes)
+      if nodes.is_a? Hash
+        pp nodes.map { [_2.path.to_s, _2.dependencies.map(&:path).map(&:to_s)] }.to_h
+      else
+        pp nodes.map { [_1.path.to_s, _1.dependencies.map(&:path).map(&:to_s)] }.to_h
+      end
+    end
+
     def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
       spec = DSL::Spec.new
       spec.instance_eval(File.read(subu_rb))
       graph = spec.to_dependency_graph(subu_rb.dirname)
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
-
-      # pp graph.nodes.map { [_2.path.to_s, _2.dependencies.map(&:path).map(&:to_s)] }.to_h
 
       unless graph.missing_dependencies.none?
         raise Suburb::RuntimeError, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
@@ -127,7 +132,7 @@ module Suburb
                transitive_deps_requiring_build(graph, root_node)
              end
 
-      if deps.any?
+      if deps.any? || !File.exist?(root_node.path.to_s) || clean || force
         execute_nodes_in_order(subu_spec, deps + [root_node], clean:)
       else
         @terminal_output.success 'All files up to date.'

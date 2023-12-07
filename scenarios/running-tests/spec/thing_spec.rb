@@ -1,5 +1,5 @@
 require 'rspec'
-require_relative '../src/thing'
+require_relative '../../library/src/thing'
 
 RSpec.describe Thing do
   it 'works' do
