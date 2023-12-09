@@ -113,7 +113,7 @@ module Suburb
             builders_executed << builder
           end
         end
-        assert_output_was_built!(node, last_modified) unless clean
+        assert_output_was_built!(node) unless clean
       rescue ::RuntimeError => e
         raise Suburb::RuntimeError, e
       rescue Interrupt => e
@@ -127,7 +127,7 @@ module Suburb
       (File.mtime(node.path) if File.exist?(node.path))
     end
 
-    def assert_output_was_built!(node, _last_modified)
+    def assert_output_was_built!(node)
       return if File.exist?(node.path)
 
       raise Suburb::RuntimeError, ''"Build definition code block failed to create the expected output file:

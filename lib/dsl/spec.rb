@@ -6,13 +6,9 @@ require_relative '../dependency_graph'
 module Suburb
   module DSL
     class Spec
-      def files
-        @files ||= []
-      end
+      def files = @files ||= []
 
-      def builders
-        @builders ||= {}
-      end
+      def builders = @builders ||= {}
 
       def file(outs, ins: [], stdout: false, &block)
         files << DSL::File.new(outs, ins:, stdout:, &block)
@@ -35,34 +31,31 @@ module Suburb
 
       def add_out(dependencies, out, ins, stdout: false, &builder)
         case out
-
         in Proc => proc
-          ins
-            .map { ::File.expand_path(_1, dependencies.root_path) }
-            .map { proc.call(Pathname.new(_1)) }
-            .each do |out_|
-              dependencies.add_path(out_, stdout:)
-              builders[out_] = builder
-              ins.each do |in_|
-                add_in(dependencies, in_, out_)
-              end
-            end
+          add_proc_as_out(proc, ins, dependencies, stdout:, &builder)
 
         in String => out_
-          node = dependencies.add_path(out_, stdout:)
-          builders[node.path.to_s] = builder
-          ins.each do |in_|
-            add_in(dependencies, in_, out_)
-          end
+          add_single_out(out_, ins, dependencies, stdout:, &builder)
 
         in Array => outs
           outs.each do |out_|
-            node = dependencies.add_path(out_, stdout:)
-            builders[node.path.to_s] = builder
-            ins.each do |in_|
-              add_in(dependencies, in_, out_)
-            end
+            add_single_out(out_, ins, dependencies, stdout:, &builder)
           end
+        end
+      end
+
+      def add_single_out(out_, ins, dependencies, stdout: false, &builder)
+        node = dependencies.add_path(out_, stdout:)
+        builders[node.path.to_s] = builder
+        ins.each do |in_|
+          add_in(dependencies, in_, out_)
+        end
+      end
+
+      def add_proc_as_out(proc, ins, dependencies, stdout: false, &builder)
+        ins_absolute = ins.map { Pathname.new(File.expand_path(_1, dependencies.root_path)) }
+        Array(proc.call(ins_absolute)).each do |out_|
+          add_single_out(out_, ins, dependencies, stdout: false, &builder)
         end
       end
 
@@ -79,9 +72,7 @@ module Suburb
         end
       end
 
-      def is_glob(path)
-        path.include?('*')
-      end
+      def is_glob(path) = path.include?('*')
     end
   end
 end
