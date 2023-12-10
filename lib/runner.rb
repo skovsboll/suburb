@@ -27,10 +27,8 @@ module Suburb
     include Progress
     include Debug
 
-    def initialize(log_file, terminal_output)
-      @log_file = log_file
-      @terminal_output = terminal_output
-      @composite_log = CompositeLog.new(@log_file, @terminal_output)
+    def initialize(log)
+      @log = log
     end
 
     def run(target_path, force: false)
@@ -81,8 +79,7 @@ module Suburb
       if deps.any? || !File.exist?(root_node.path.to_s) || clean || force
         execute_nodes_in_order(subu_spec, deps + [root_node], clean:)
       else
-        @terminal_output.success 'All files up to date.'
-        @log_file.success 'All files up to date.'
+        @log.success 'All files up to date.'
       end
     end
 
@@ -109,7 +106,7 @@ module Suburb
           Dir.chdir(node.root_path) do
             FileUtils.mkdir_p node.path.dirname
             builder = subu_spec.builders[node.path.to_s]
-            ShellExec.new(log).instance_exec(ins, outs, &builder)
+            ShellExec.new(@log).instance_exec(ins, outs, &builder)
             builders_executed << builder
           end
         end

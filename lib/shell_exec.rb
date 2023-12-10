@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 require 'rbconfig'
+require_relative './command_printer'
 
 module Suburb
+
   class ShellExec
     def initialize(log)
-      @cmd = TTY::Command.new(output: log, color: true, uuid: false)
+      @cmd = TTY::Command.new(printer: CommandPrinter.new(log))
     end
 
     def sh(command)
-      out, = @cmd.run(command)
-      out.strip
+      @cmd.run(command)
     rescue TTY::Command::ExitError => e
       raise Suburb::RuntimeError, e.message
     end
