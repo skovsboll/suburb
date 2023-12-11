@@ -3,12 +3,12 @@
 require_relative 'lib/suburb/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'Suburb'
+  spec.name = 'suburb'
   spec.version = Suburb::VERSION
   spec.authors = ['Søren Skovsbøll']
   spec.email = ['sorens@hey.com']
 
-  spec.summary = 'Subu.rb - the developer friendly build graph'
+  spec.summary = 'Suburb - the developer friendly build graph'
   spec.description = <<~EOS
     A build tool that connects other build tools with a complete and acyclic graph.
     Unline many other build tools, Suburb does not try to take over the world but lets you work,
