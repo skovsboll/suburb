@@ -1,5 +1,11 @@
-# suburb
-The successor to Rake supporting deterministic builds, modular definitions and developer happiness
+# Suburb
+
+
+### The developer friendly build graph
+
+A build tool that connects other build tools with a complete and acyclic graph.
+Unline many other build tools, Suburb does not try to take over the world but lets you work,
+directly in your code repo, using the tools that you love.
 
 
 
