@@ -60,6 +60,14 @@ suburb app.zip
 
 ```
 
+You can ask Suburb to visualize the dependency tree by using the `-t` or `--show-tree` flag. 
+And if you are in the iTerm2 terminal or one that supports displaying images inline, you can see the dependency graph directly in the terminal.
+
+```bash
+suburb app.zip -t
+```
+![dependencies](scenarios/readme-example/deps.jpeg)
+
 
 ## Reasons for Suburb
 
