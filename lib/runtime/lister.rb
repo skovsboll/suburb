@@ -10,7 +10,7 @@ module Suburb
         super_specs = find_all_subu_specs(Dir.pwd)
 
         specs = (super_specs + sub_specs).map { read_spec(_1) }
-        graph = specs.each_with_object(DependencyGraph.new(Dir.pwd)) do |item, acc|
+        graph = specs.each_with_object(Graph::DependencyGraph.new(Dir.pwd)) do |item, acc|
           acc.merge!(item.to_dependency_graph)
         end
 
