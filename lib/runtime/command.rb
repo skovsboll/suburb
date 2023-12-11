@@ -91,17 +91,17 @@ module Suburb
       def run_suburb
         start_time = Time.new
         if params[:list]
-          Suburb::Lister.new(@log).run
+          Lister.new(@log).run
         else
-          runner = Suburb::Runtime::Runner.new(@log)
+          runner = Runner.new(@log)
           files = Array(params[:files])
           run_files(files, runner)
           @log.info "Completed in #{format_elapsed(start_time, Time.new)}."
           @log.info 'Log file: cat ./suburb.log'
         end
-      rescue Suburb::CyclicDependencyError => e
+      rescue CyclicDependencyError => e
         cyclic_dep_error(e, runner, start_time)
-      rescue Suburb::RuntimeError => e
+      rescue RuntimeError => e
         runtime_error(e, runner, start_time)
       end
 

@@ -34,7 +34,7 @@ module Suburb
         discover_sub_graphs!(graph, spec, already_visited: [spec.root_path])
 
         if graph.missing_dependencies.any?
-          raise Suburb::RuntimeError, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
+          raise Runtime::RuntimeError, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
 
         #{graph.missing_dependencies.map(&:original_path).map(&:to_s).join("\n")}
 

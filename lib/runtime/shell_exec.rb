@@ -7,13 +7,13 @@ module Suburb
   module Runtime
     class ShellExec
       def initialize(log)
-        @cmd = TTY::Command.new(printer: CommandPrinter.new(log))
+        @cmd = TTY::Command.new(printer: Util::CommandPrinter.new(log))
       end
 
       def sh(command)
         @cmd.run(command)
       rescue TTY::Command::ExitError => e
-        raise Suburb::RuntimeError, e.message
+        raise Runtime::RuntimeError, e.message
       end
 
       def rtx(command)
@@ -39,7 +39,7 @@ module Suburb
 
       def cp(ins, outs)
         unless ins.size == outs.size
-          raise Suburb::RuntimeError,
+          raise Runtime::RuntimeError,
                 "For the 'cp' (copy) command to work, there must be an equal number of ins and outs. There are #{ins.size} ins and #{outs.size} outs. "
         end
 

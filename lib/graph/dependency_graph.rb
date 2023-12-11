@@ -13,7 +13,7 @@ module Suburb
       attr_reader :root_path
 
       def initialize(root_path)
-        raise Suburb::RuntimeError, 'A dependency graph must have a root path' unless root_path
+        raise Suburb::Runtime::RuntimeError, 'A dependency graph must have a root path' unless root_path
 
         @root_path = Pathname.new(root_path).expand_path
 

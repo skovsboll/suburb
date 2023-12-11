@@ -15,7 +15,7 @@ module Suburb
       # @return [Array[Node]] all dependencies of the node, including transitive dependencies
       def transitive_dependencies(graph, node, already_visited: [])
         if already_visited.include?(node.path.to_s)
-          raise Suburb::CyclicDependencyError.new("Cyclic dependency detected: #{node.original_path}", graph, node)
+          raise CyclicDependencyError.new("Cyclic dependency detected: #{node.original_path}", graph, node)
         end
 
         deps = node

@@ -32,7 +32,7 @@ module Suburb
 
       def find_subu_spec!(target_path)
         find_subu_rb(target_path) or
-          raise Suburb::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
+          raise Runtime::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
       end
 
       def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
@@ -47,7 +47,7 @@ module Suburb
       # @param [Boolean] force
       def execute(graph, subu_spec, target_file_path, force: false, clean: false)
         target = Pathname.new(target_file_path).expand_path
-        raise Suburb::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
+        raise Runtime::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
 
         root_node = graph.nodes[target.to_s]
         deps = if force || clean
@@ -92,9 +92,9 @@ module Suburb
           end
           assert_output_was_built!(node) unless clean
         rescue ::RuntimeError => e
-          raise Suburb::RuntimeError, e
+          raise Runtime::RuntimeError, e
         rescue Interrupt => e
-          raise Suburb::RuntimeError, 'The build was interrupted.'
+          raise Runtime::RuntimeError, 'The build was interrupted.'
         end
       end
 
@@ -107,7 +107,7 @@ module Suburb
       def assert_output_was_built!(node)
         return if File.exist?(node.path)
 
-        raise Suburb::RuntimeError, ''"Build definition code block failed to create the expected output file:
+        raise Runtime::RuntimeError, ''"Build definition code block failed to create the expected output file:
           #{node.path}
           "''
       end

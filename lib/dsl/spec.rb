@@ -27,7 +27,7 @@ module Suburb
       end
 
       def to_dependency_graph
-        dependencies = Suburb::DependencyGraph.new(root_path)
+        dependencies = Suburb::Graph::DependencyGraph.new(root_path)
         files.each do |f|
           f.outs.each do |out|
             add_out(dependencies, out, f.ins, stdout: f.stdout, &f.builder)
