@@ -81,6 +81,37 @@ Supports Macos, Linux and Windows.
 gem install suburb
 ```
 
+## Usage
+
+```
+Usage: suburb [OPTIONS] [FILES...]
+
+The developer friendly build graph
+
+Arguments:
+  FILES  The relative path(s) of the file(s) you want to build.
+
+Options:
+  -c, --clean      Delete file and all its (transitive) dependencies.
+  -f, --force      Force rebuilding file and all dependencies.
+  -h, --help       Print usage
+  -l, --list       List the files that can be build in this directory, its
+                   parent or child directories.
+  -t, --show-tree  Show a visual graph of the dependency tree.
+  -w, --watch      Watch file and dependencies (including transitive) for
+                   changes and rebuild as needed.
+
+Examples:
+  Build and watch website
+    $ suburb -w dist/index.html
+
+  Run tests, even if no dependencies changed
+    $ suburb -f test-results.txt
+
+  Clean (remove) file all dependencies
+    $ suburb --clean
+```
+
 ## Reasons for Suburb
 
 Makefiles and Rakefiles are easy to read and understand. 

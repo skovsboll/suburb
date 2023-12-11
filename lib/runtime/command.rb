@@ -20,7 +20,7 @@ module Suburb
       usage do
         program 'suburb'
 
-        desc 'The simplest build graph in the world'
+        desc 'The developer friendly build graph'
 
         no_command
 
