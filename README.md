@@ -69,6 +69,18 @@ suburb app.zip -t
 ![dependencies](scenarios/readme-example/deps.jpeg)
 
 
+## Requirements
+
+Ruby 3.1.3 or higher.
+
+Supports Macos, Linux and Windows.
+
+## Installation
+
+```bash
+gem install suburb
+```
+
 ## Reasons for Suburb
 
 Makefiles and Rakefiles are easy to read and understand. 
