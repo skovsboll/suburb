@@ -53,6 +53,7 @@ module Suburb
       other_graph.nodes.each do |_path, node|
         add_node(node)
       end
+      self
     end
 
     # @return [Array[Node]]
