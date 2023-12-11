@@ -1,3 +1,13 @@
+PATH
+  remote: .
+  specs:
+    Suburb (0.1.0)
+      tty-command (~> 0.10)
+      tty-link (~> 0.1)
+      tty-logger (~> 0.6)
+      tty-option (~> 0.3)
+      tty-progressbar (~> 0.18)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -43,6 +53,7 @@ GEM
       method_source (~> 1.0)
     racc (1.7.3)
     rainbow (3.1.1)
+    rake (13.1.0)
     rb-fsevent (0.11.2)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
@@ -105,16 +116,13 @@ PLATFORMS
   x86_64-darwin-23
 
 DEPENDENCIES
+  Suburb!
   guard
   guard-rspec
-  rspec
+  rake (~> 13.0)
+  rspec (~> 3.0)
   rubocop
   ruby-lsp
-  tty-command
-  tty-link
-  tty-logger
-  tty-option
-  tty-progressbar
 
 BUNDLED WITH
    2.4.10

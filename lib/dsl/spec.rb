@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative './file'
-require_relative '../dependency_graph'
+require_relative '../graph/dependency_graph'
 
 module Suburb
   module DSL

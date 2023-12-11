@@ -1,6 +1,6 @@
-require_relative '../lib/dependency_graph'
+require_relative '../suburb/lib/graph/dependency_graph'
 
-describe Suburb::DependencyGraph do
+describe Suburb::Graph::DependencyGraph do
   it '#root_path' do
     dag = described_class.new('.')
     expect(dag.root_path.absolute?).to be(true)
@@ -32,7 +32,7 @@ describe Suburb::DependencyGraph do
         dag = described_class.new('.')
         expect do
           dag.add_path('../mjallo')
-        end.to raise_error(RuntimeError)
+        end.to raise_error(Suburb::Runtime::RuntimeError)
       end
     end
 
@@ -53,7 +53,7 @@ describe Suburb::DependencyGraph do
         dag = described_class.new('/etc')
         expect do
           dag.add_path('/mjallo')
-        end.to raise_error(RuntimeError)
+        end.to raise_error(Suburb::Runtime::RuntimeError)
       end
     end
   end
@@ -84,7 +84,7 @@ describe Suburb::DependencyGraph do
       dag.add_path('one')
       expect do
         dag.add_dependency('one', 'one')
-      end.to raise_error(RuntimeError)
+      end.to raise_error(Suburb::Runtime::RuntimeError)
     end
 
     it 'cycle-2' do
@@ -94,7 +94,7 @@ describe Suburb::DependencyGraph do
       dag.add_dependency('one', 'two')
       expect do
         dag.add_dependency('two', 'one')
-      end.to raise_error(RuntimeError)
+      end.to raise_error(Suburb::Runtime::RuntimeError)
     end
 
     it 'cycle-3' do
@@ -106,7 +106,7 @@ describe Suburb::DependencyGraph do
       dag.add_dependency('two', 'three')
       expect do
         dag.add_dependency('three', 'one')
-      end.to raise_error(RuntimeError)
+      end.to raise_error(Suburb::Runtime::RuntimeError)
     end
   end
 end

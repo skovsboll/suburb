@@ -1,7 +1,7 @@
-class Suburb::RuntimeError < RuntimeError
+class Suburb::Runtime::RuntimeError < RuntimeError
 end
 
-class Suburb::CyclicDependencyError < RuntimeError
+class Suburb::Runtime::CyclicDependencyError < RuntimeError
   attr_reader :graph, :node
 
   def initialize(message, graph, node)
