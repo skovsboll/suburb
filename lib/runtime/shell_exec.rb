@@ -8,16 +8,21 @@ module Suburb
     class ShellExec
       def initialize(log)
         @cmd = TTY::Command.new(printer: Util::CommandPrinter.new(log))
+        @direct = TTY::Command.new(printer: :pretty)
       end
 
-      def sh(command)
-        @cmd.run(command)
+      def sh(command, stdout: false)
+        if stdout
+          @direct.run(command)
+        else
+          @cmd.run(command)
+        end
       rescue TTY::Command::ExitError => e
         raise Runtime::RuntimeError, e.message
       end
 
-      def rtx(command)
-        sh "rtx x -- #{command}"
+      def rtx(command, **kw)
+        sh("rtx x -- #{command}", **kw)
       end
 
       def os

@@ -22,15 +22,15 @@ module Suburb
         @builders ||= {}
       end
 
-      def file(outs, ins: [], stdout: false, &block)
-        files << DSL::File.new(outs, ins:, stdout:, &block)
+      def file(outs, ins: [], &block)
+        files << DSL::File.new(outs, ins:, &block)
       end
 
       def to_dependency_graph
         dependencies = Suburb::Graph::DependencyGraph.new(root_path)
         files.each do |f|
           f.outs.each do |out|
-            add_out(dependencies, out, f.ins, stdout: f.stdout, &f.builder)
+            add_out(dependencies, out, f.ins, &f.builder)
           end
         end
         dependencies
@@ -41,33 +41,33 @@ module Suburb
         @builders.merge!(other_spec.builders)
       end
 
-      def add_out(dependencies, out, ins, stdout: false, &builder)
+      def add_out(dependencies, out, ins, &builder)
         case out
         in Proc => proc
-          add_proc_as_out(proc, ins, dependencies, stdout:, &builder)
+          add_proc_as_out(proc, ins, dependencies, &builder)
 
         in String => out_
-          add_single_out(out_, ins, dependencies, stdout:, &builder)
+          add_single_out(out_, ins, dependencies, &builder)
 
         in Array => outs
           outs.each do |out_|
-            add_single_out(out_, ins, dependencies, stdout:, &builder)
+            add_single_out(out_, ins, dependencies, &builder)
           end
         end
       end
 
-      def add_single_out(out_, ins, dependencies, stdout: false, &builder)
-        node = dependencies.add_path(out_, stdout:)
+      def add_single_out(out_, ins, dependencies, &builder)
+        node = dependencies.add_path(out_)
         builders[node.path.to_s] = builder
         ins.each do |in_|
           add_in(dependencies, in_, out_)
         end
       end
 
-      def add_proc_as_out(proc, ins, dependencies, stdout: false, &builder)
+      def add_proc_as_out(proc, ins, dependencies, &builder)
         ins_absolute = ins.map { Pathname.new(File.expand_path(_1, dependencies.root_path)) }
         Array(proc.call(ins_absolute)).each do |out_|
-          add_single_out(out_, ins, dependencies, stdout: false, &builder)
+          add_single_out(out_, ins, dependencies, &builder)
         end
       end
 

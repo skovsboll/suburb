@@ -74,10 +74,8 @@ module Suburb
         end
 
         with_progress(nodes_with_builder, clean:) do |node|
-          last_modified = maybe_last_modified(node)
           ins = node.dependencies.map(&:path)
           outs = Array(node.path)
-          log = node.stdout ? @composite_log : @log_file
           if clean
             outs.each do |out_|
               File.delete(out_) if File.exist?(out_)
@@ -93,7 +91,7 @@ module Suburb
           assert_output_was_built!(node) unless clean
         rescue ::RuntimeError => e
           raise Runtime::RuntimeError, e
-        rescue Interrupt => e
+        rescue Interrupt => _e
           raise Runtime::RuntimeError, 'The build was interrupted.'
         end
       end
