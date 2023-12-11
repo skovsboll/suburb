@@ -9,9 +9,9 @@ module Suburb
     def show_tree_and_link(target_path)
       subu_rb = find_subu_spec!(target_path)
 
-      spec = DSL::Spec.new
+      spec = DSL::Spec.new(subu_rb)
       spec.instance_eval(File.read(subu_rb))
-      graph = spec.to_dependency_graph(subu_rb.dirname)
+      graph = spec.to_dependency_graph
       discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
       show_graph_tree(graph)

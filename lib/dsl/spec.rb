@@ -6,15 +6,27 @@ require_relative '../dependency_graph'
 module Suburb
   module DSL
     class Spec
-      def files = @files ||= []
+      def initialize(spec_file)
+        @spec_file = Pathname.new(spec_file)
+      end
 
-      def builders = @builders ||= {}
+      def root_path
+        @spec_file.dirname
+      end
+
+      def files
+        @files ||= []
+      end
+
+      def builders
+        @builders ||= {}
+      end
 
       def file(outs, ins: [], stdout: false, &block)
         files << DSL::File.new(outs, ins:, stdout:, &block)
       end
 
-      def to_dependency_graph(root_path)
+      def to_dependency_graph
         dependencies = Suburb::DependencyGraph.new(root_path)
         files.each do |f|
           f.outs.each do |out|

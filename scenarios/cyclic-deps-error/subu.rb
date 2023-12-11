@@ -1,4 +1,4 @@
-file 'out/A.txt' do
+file 'out/A.txt', ins: 'out/C.txt' do
   sh 'touch out/A.txt'
 end
 

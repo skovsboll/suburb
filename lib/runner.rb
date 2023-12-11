@@ -45,19 +45,8 @@ module Suburb
     end
 
     def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
-      spec = DSL::Spec.new
-      spec.instance_eval(File.read(subu_rb))
-      graph = spec.to_dependency_graph(subu_rb.dirname)
-      discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
-
-      unless graph.missing_dependencies.none?
-        raise Suburb::RuntimeError, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
-
-        #{graph.missing_dependencies.map(&:original_path).map(&:to_s).join("\n")}
-
-        "''
-      end
-
+      spec = read_spec(subu_rb)
+      graph = read_graph(spec)
       execute graph, spec, target_file_path, force:, clean:
     end
 
