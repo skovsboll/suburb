@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    Suburb (0.1.0)
+    suburb (0.1.0)
       tty-command (~> 0.10)
       tty-link (~> 0.1)
       tty-logger (~> 0.6)
@@ -116,13 +116,13 @@ PLATFORMS
   x86_64-darwin-23
 
 DEPENDENCIES
-  Suburb!
   guard
   guard-rspec
   rake (~> 13.0)
   rspec (~> 3.0)
   rubocop
   ruby-lsp
+  suburb!
 
 BUNDLED WITH
    2.4.10
