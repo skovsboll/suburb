@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 file(
-  ->(_in_) { 'dist/package.tgz' },
-  ins: ['dist/package.json', 'version.txt']
-) do |ins, _outs|
-  rtx "npm pack #{ins[0].dirname}"
+  'dist/package.tgz', ins: ['dist/package.json']
+) do |ins, outs|
+  filename, = rtx "npm pack #{ins[0].dirname}"
+  sh "cp #{filename.strip} #{outs[0]}"
 end
 
 file 'dist/package.json', ins: ['package.json', 'version.txt'] do |ins, outs|
   # replace version number in package.json with the one read from version.txt
   package_json_content = ins[0].read
   version = ins[1].read.strip
+  puts "version=#{version}"
 
   new_package_json = package_json_content.gsub(/"version": ".*"/, "\"version\": \"#{version}\"")
 
@@ -19,6 +20,6 @@ file 'dist/package.json', ins: ['package.json', 'version.txt'] do |ins, outs|
 end
 
 file 'version.txt' do |_, outs|
-  sha = rtx 'git rev-parse --short HEAD'
+  sha, = rtx 'git rev-parse --short HEAD'
   File.write outs[0], "1.0-#{sha}"
 end
