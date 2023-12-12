@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     suburb (0.1.1)
+      filewatcher (~> 2.0)
       tty-command (~> 0.10)
       tty-link (~> 0.1)
       tty-logger (~> 0.6)
@@ -18,6 +19,8 @@ GEM
     diff-lcs (1.5.0)
     e2mmap (0.1.0)
     ffi (1.16.3)
+    filewatcher (2.1.0)
+      module_methods (~> 0.1.0)
     formatador (1.1.0)
     guard (2.18.1)
       formatador (>= 0.2.4)
@@ -46,6 +49,7 @@ GEM
       rb-inotify (~> 0.9, >= 0.9.10)
     lumberjack (1.2.10)
     method_source (1.0.0)
+    module_methods (0.1.0)
     nenv (0.3.0)
     nokogiri (1.15.5-arm64-darwin)
       racc (~> 1.4)

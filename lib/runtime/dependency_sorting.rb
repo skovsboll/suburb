@@ -26,6 +26,15 @@ module Suburb
           .flat_map { transitive_dependencies(graph, _1, already_visited: already_visited + [node.path.to_s]) } + deps
       end
 
+      def transitive_ins(graph, node)
+        deps = node
+               .dependencies
+               .reject { graph.nodes[_1.path.to_s] }
+
+        deps
+          .flat_map { transitive_ins(graph, _1) } + deps
+      end
+
       # @param [DependencyGraph] graph
       # @param [Node] node
       # @return [Node] The node that has a build definition, if it is registered

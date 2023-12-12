@@ -22,8 +22,8 @@ module Suburb
         @log = log
       end
 
-      def run(target_path, force: false)
-        run_subu_spec(find_subu_spec!(target_path), target_path, force:, clean: false)
+      def run(target_path, force: false, watch: false)
+        run_subu_spec(find_subu_spec!(target_path), target_path, force:, watch:, clean: false)
       end
 
       def clean(target_path)
@@ -35,17 +35,17 @@ module Suburb
           raise Runtime::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
       end
 
-      def run_subu_spec(subu_rb, target_file_path, force: false, clean: false)
+      def run_subu_spec(subu_rb, target_file_path, force: false, watch: false, clean: false)
         spec = read_spec(subu_rb)
         graph = read_graph(spec)
-        execute graph, spec, target_file_path, force:, clean:
+        execute graph, spec, target_file_path, force:, watch:, clean:
       end
 
       # @param [DependencyGraph] graph
       # @param [DSL::Root] _subu_spec
       # @param [String] target_file_path
       # @param [Boolean] force
-      def execute(graph, subu_spec, target_file_path, force: false, clean: false)
+      def execute(graph, subu_spec, target_file_path, force: false, watch: false, clean: false)
         target = Pathname.new(target_file_path).expand_path
         raise Runtime::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
 

@@ -41,4 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'tty-logger', '~> 0.6'
   spec.add_dependency 'tty-option', '~> 0.3'
   spec.add_dependency 'tty-progressbar', '~> 0.18'
+  spec.add_dependency 'filewatcher', '~> 2.0'
 end

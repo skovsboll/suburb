@@ -133,7 +133,7 @@ module Suburb
                 @log.warn 'Run this in iTerm2 to show trees and links.'
               end
             else
-              runner.run(file_path, force: params[:force])
+              runner.run(file_path, force: params[:force], watch: params[:watch])
             end
           end
         else
