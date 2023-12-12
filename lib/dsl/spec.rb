@@ -44,15 +44,15 @@ module Suburb
       def add_out(dependencies, out, ins, &builder)
         case out
         in Proc => proc
-        add_proc_as_out(proc, ins, dependencies, &builder)
+          add_proc_as_out(proc, ins, dependencies, &builder)
 
         in String => out_
-        add_single_out(out_, ins, dependencies, &builder)
+          add_single_out(out_, ins, dependencies, &builder)
 
         in Array => outs
-        outs.each do |out_|
-          add_single_out(out_, ins, dependencies, &builder)
-        end
+          outs.each do |out_|
+            add_single_out(out_, ins, dependencies, &builder)
+          end
         end
       end
 
@@ -65,7 +65,7 @@ module Suburb
       end
 
       def add_proc_as_out(proc, ins, dependencies, &builder)
-        ins_absolute = ins.map { Pathname.new(File.expand_path(_1, dependencies.root_path)) }
+        ins_absolute = ins.map { Pathname.new(::File.expand_path(_1, dependencies.root_path)) }
         Array(proc.call(ins_absolute)).each do |out_|
           add_single_out(out_, ins, dependencies, &builder)
         end
@@ -88,3 +88,5 @@ module Suburb
         path.include?('*')
       end
     end
+  end
+end
