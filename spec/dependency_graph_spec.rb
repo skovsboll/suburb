@@ -1,4 +1,5 @@
-require_relative '../suburb/lib/graph/dependency_graph'
+require_relative '../lib/graph/dependency_graph'
+require_relative '../lib/runtime/runtime_error'
 
 describe Suburb::Graph::DependencyGraph do
   it '#root_path' do

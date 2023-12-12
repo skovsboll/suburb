@@ -36,7 +36,7 @@ module Suburb
       end
 
       def explain_outside_root_path!(path, absolute_path, root_path)
-        raise ''"A subu.rb file can not add paths outside root path.
+        raise Runtime::RuntimeError, ''"A subu.rb file can not add paths outside root path.
         The root path of the subu.rb is '#{root_path}' You attempted to add a file at
         '#{absolute_path}'. All relative paths in a subu.rb file are considered relative to
         the closest subu.rb file.

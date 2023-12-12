@@ -44,15 +44,15 @@ module Suburb
       def add_out(dependencies, out, ins, &builder)
         case out
         in Proc => proc
-          add_proc_as_out(proc, ins, dependencies, &builder)
+        add_proc_as_out(proc, ins, dependencies, &builder)
 
         in String => out_
-          add_single_out(out_, ins, dependencies, &builder)
+        add_single_out(out_, ins, dependencies, &builder)
 
         in Array => outs
-          outs.each do |out_|
-            add_single_out(out_, ins, dependencies, &builder)
-          end
+        outs.each do |out_|
+          add_single_out(out_, ins, dependencies, &builder)
+        end
         end
       end
 
@@ -74,7 +74,7 @@ module Suburb
       def add_in(dependencies, in_, out)
         path = ::File.expand_path(in_, dependencies.root_path)
 
-        if is_glob(path)
+        if glob?(path)
           Dir.glob(path) do |expanded|
             fn = Pathname.new(expanded).basename
             dependencies.add_dependency(out, expanded) if fn != 'subu.rb'
@@ -84,7 +84,7 @@ module Suburb
         end
       end
 
-      def is_glob(path) = path.include?('*')
+      def glob?(path)
+        path.include?('*')
+      end
     end
-  end
-end

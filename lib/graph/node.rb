@@ -10,11 +10,11 @@ module Suburb
 
       def initialize(path, original_path, root_path, stdout: false)
         @path = Pathname.new(path)
-        raise 'A node must be constructed with a absolute path' unless @path.absolute?
+        raise Runtime::RuntimeError, 'A node must be constructed with a absolute path' unless @path.absolute?
 
         @original_path = original_path
 
-        raise 'A node must know its root path' unless root_path
+        raise Runtime::RuntimeError, 'A node must know its root path' unless root_path
 
         @root_path = root_path
         @dependencies = []
@@ -22,10 +22,10 @@ module Suburb
       end
 
       def add_dependency(node)
-        raise 'Can not add depenency to one self' if node.path == path
+        raise Runtime::RuntimeError, 'Can not add depenency to one self' if node.path == path
 
         if @dependencies.include?(node) || circular_dependency?(node)
-          raise 'Circular dependency or duplicate node detected'
+          raise Runtime::RuntimeError, 'Circular dependency or duplicate node detected'
         end
 
         @dependencies << node

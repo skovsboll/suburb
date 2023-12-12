@@ -28,7 +28,7 @@ module Suburb
       end
 
       def read_graph(spec)
-        raise 'This subu.rb spec does not declare any files.' if spec.files.empty?
+        raise Runtime::RuntimeError, 'This subu.rb spec does not declare any files.' if spec.files.empty?
 
         graph = spec.to_dependency_graph
         discover_sub_graphs!(graph, spec, already_visited: [spec.root_path])
