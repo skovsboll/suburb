@@ -1,11 +1,14 @@
-file 'out/A.txt', ins: 'out/C.txt' do
-  sh 'touch out/A.txt'
+build 'out/A.txt',
+      using: 'out/C.txt' do
+  run 'touch out/A.txt'
 end
 
-file 'out/B.txt', ins: 'out/A.txt' do
-  sh 'touch out/B.txt'
+build 'out/B.txt',
+      using: 'out/A.txt' do
+  run 'touch out/B.txt'
 end
 
-file 'out/C.txt', ins: 'out/B.txt' do
-  sh 'touch out/C.txt'
+build 'out/C.txt',
+      using: 'out/B.txt' do
+  run 'touch out/C.txt'
 end

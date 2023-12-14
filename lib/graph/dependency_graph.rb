@@ -91,7 +91,7 @@ module Suburb
       end
 
       def normalize_path(path)
-        Pathname.new(File.expand_path(path, @root_path))
+        Pathname.new(::File.expand_path(path, @root_path))
       end
     end
 

@@ -11,7 +11,7 @@ module Suburb
         @direct = TTY::Command.new(printer: :pretty)
       end
 
-      def sh(command, stdout: false)
+      def run(command, stdout: false)
         if stdout
           @direct.run(command)
         else
@@ -22,7 +22,7 @@ module Suburb
       end
 
       def rtx(command, **kw)
-        sh("rtx x -- #{command}", **kw)
+        run("rtx x -- #{command}", **kw)
       end
 
       def os

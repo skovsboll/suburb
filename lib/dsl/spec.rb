@@ -22,8 +22,8 @@ module Suburb
         @builders ||= {}
       end
 
-      def file(outs, ins: [], &block)
-        files << DSL::File.new(outs, ins:, &block)
+      def build(outs, using: [], &block)
+        files << DSL::File.new(outs, ins: using, &block)
       end
 
       def to_dependency_graph

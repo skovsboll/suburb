@@ -123,7 +123,7 @@ module Suburb
       def run_files(files, runner)
         if files.any?
           files.each do |file|
-            file_path = File.expand_path(file)
+            file_path = ::File.expand_path(file)
             if params[:clean]
               runner.clean(file_path)
             elsif params[:tree]
