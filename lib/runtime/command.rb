@@ -7,11 +7,11 @@ module Suburb
     class Command
       include TTY::Option
 
-      def initialize
-        super
-        @log = TTY::Logger.new do |config|
+      def log
+        @log ||= TTY::Logger.new do |config|
+          level = params[:verbose] ? :debug : :info
           config.handlers = [
-            [:console, { output: $stdout, level: :info }],
+            [:console, { output: $stdout, level: }],
             [Suburb::Util::MonochromeHandler, { output: File.open('suburb.log', 'w'), level: :debug }]
           ]
         end
@@ -71,6 +71,12 @@ module Suburb
         desc 'Delete file and all its (transitive) dependencies.'
       end
 
+      flag :verbose do
+        short '-v'
+        long '--verbose'
+        desc 'Print detailed log to stdout'
+      end
+
       flag :help do
         short '-h'
         long '--help'
@@ -81,7 +87,7 @@ module Suburb
         if params[:help]
           print help
         elsif params.errors.any?
-          @log.error params.errors.summary
+          log.error params.errors.summary
           print help
         else
           run_suburb
@@ -91,13 +97,13 @@ module Suburb
       def run_suburb
         start_time = Time.new
         if params[:list]
-          Lister.new(@log).run
+          Lister.new(log).run
         else
-          runner = Runner.new(@log)
+          runner = Runner.new(log)
           files = Array(params[:files])
           run_files(files, runner)
-          @log.info "Completed in #{format_elapsed(start_time, Time.new)}."
-          @log.info 'Log file: cat ./suburb.log'
+          log.info "Completed in #{format_elapsed(start_time, Time.new)}."
+          log.info 'Log file: cat ./suburb.log'
         end
       rescue CyclicDependencyError => e
         cyclic_dep_error(e, runner, start_time)
@@ -106,19 +112,19 @@ module Suburb
       end
 
       def cyclic_dep_error(e, runner, start_time)
-        @log.debug e
-        @log.error e.message
-        @log.info runner.show_graph_tree(e.graph) if runner.iterm2?
-        @log.info "Errored after #{format_elapsed(start_time, Time.new)}."
-        @log.info 'Complete log: cat ./suburb.log'
+        log.debug e
+        log.error e.message
+        log.info runner.show_graph_tree(e.graph) if runner.iterm2?
+        log.info "Errored after #{format_elapsed(start_time, Time.new)}."
+        log.info 'Complete log: cat ./suburb.log'
         exit 2
       end
 
       def runtime_error(e, _runner, start_time)
-        @log.debug e
-        @log.error e.message
-        @log.info "Errored after #{format_elapsed(start_time, Time.new)}."
-        @log.info 'Complete log: cat ./suburb.log'
+        log.debug e
+        log.error e.message
+        log.info "Errored after #{format_elapsed(start_time, Time.new)}."
+        log.info 'Complete log: cat ./suburb.log'
         exit 1
       end
 
@@ -130,9 +136,9 @@ module Suburb
               runner.clean(file_path)
             elsif params[:tree]
               if runner.iterm2?
-                @log.info runner.show_tree_and_link(file_path)
+                log.info runner.show_tree_and_link(file_path)
               else
-                @log.warn 'Run this in iTerm2 to show trees and links.'
+                log.warn 'Run this in iTerm2 to show trees and links.'
               end
             else
               runner.run(file_path, force: params[:force], watch: params[:watch])

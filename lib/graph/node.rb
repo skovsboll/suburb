@@ -22,10 +22,14 @@ module Suburb
       end
 
       def add_dependency(node)
-        raise Runtime::RuntimeError, 'Can not add depenency to one self' if node.path == path
+        if node.path == path
+          raise Suburb::Runtime::CyclicDependencyError.new(
+            'Can not add depenency to one self', nil, node
+          )
+        end
 
         if @dependencies.include?(node) || circular_dependency?(node)
-          raise Runtime::RuntimeError, 'Circular dependency or duplicate node detected'
+          raise Suburb::Runtime::CyclicDependencyError.new('Circular dependency or duplicate node detected', nil, node)
         end
 
         @dependencies << node
