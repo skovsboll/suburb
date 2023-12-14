@@ -111,6 +111,7 @@ module Suburb
         @log.info runner.show_graph_tree(e.graph) if runner.iterm2?
         @log.info "Errored after #{format_elapsed(start_time, Time.new)}."
         @log.info 'Complete log: cat ./suburb.log'
+        exit 2
       end
 
       def runtime_error(e, _runner, start_time)
@@ -118,6 +119,7 @@ module Suburb
         @log.error e.message
         @log.info "Errored after #{format_elapsed(start_time, Time.new)}."
         @log.info 'Complete log: cat ./suburb.log'
+        exit 1
       end
 
       def run_files(files, runner)
