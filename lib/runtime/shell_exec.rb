@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
-require 'rbconfig'
 require_relative '../util/command_printer'
+require_relative './platform'
 
 module Suburb
   module Runtime
     class ShellExec
+      include Platform
+
       def initialize(log)
         @cmd = TTY::Command.new(printer: Util::CommandPrinter.new(log))
         @direct = TTY::Command.new(printer: :pretty)
@@ -22,24 +24,11 @@ module Suburb
       end
 
       def rtx(command, **kw)
-        run("rtx x -- #{command}", **kw)
-      end
-
-      def os
-        case (host_os = RbConfig::CONFIG['host_os'])
-        when /mswin|windows/i
-          :windows
-        when /linux|unix/i
-          :linux
-        when /darwin|mac os/i
-          :macos
+        if os != :windows
+          run("rtx x -- #{command}", **kw)
         else
-          host_os
+          run(command)
         end
-      end
-
-      def cpu
-        RbConfig::CONFIG['host_cpu'].to_sym
       end
 
       def cp(ins, outs)
@@ -49,7 +38,7 @@ module Suburb
         end
 
         ins.zip(outs) do |in_, out_|
-          sh "cp #{in_} #{out_}"
+          run "cp #{in_} #{out_}"
         end
       end
     end
