@@ -5,7 +5,7 @@ module Suburb
     module Platform
       def os
         case (host_os = RbConfig::CONFIG['host_os'])
-        when /mswin|wingw|windows/i
+        when /mswin|mingw|windows/i
           :windows
         when /linux|unix/i
           :linux
