@@ -35,8 +35,8 @@ current dir: #{Dir.pwd}
 
       def print_command_exit(_cmd, *stdout)
         write(''"
-#{stdout.join(' ')}
-#{'·  ' * 20}
+exit: #{stdout[0]} - time: #{stdout[1]} s.
+#{'-' * 60}
 "'')
       end
 
