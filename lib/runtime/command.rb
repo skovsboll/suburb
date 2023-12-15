@@ -47,11 +47,11 @@ module Suburb
         desc 'Force rebuilding file and all dependencies.'
       end
 
-      flag :watch do
-        short '-w'
-        long '--watch'
-        desc 'Watch file and dependencies (including transitive) for changes and rebuild as needed.'
-      end
+      # flag :watch do
+      #   short '-w'
+      #   long '--watch'
+      #   desc 'Watch file and dependencies (including transitive) for changes and rebuild as needed.'
+      # end
 
       flag :list do
         short '-l'
@@ -133,7 +133,7 @@ module Suburb
           files.each do |file|
             file_path = ::File.expand_path(file)
             if params[:clean]
-              runner.clean(file_path)
+              runner.clean(file_path, verbose: params[:verbose])
             elsif params[:tree]
               if runner.iterm2?
                 log.info runner.show_tree_and_link(file_path)
@@ -141,7 +141,7 @@ module Suburb
                 log.warn 'Run this in iTerm2 to show trees and links.'
               end
             else
-              runner.run(file_path, force: params[:force], watch: params[:watch])
+              runner.run(file_path, force: params[:force], watch: params[:watch], verbose: params[:verbose])
             end
           end
         else

@@ -14,6 +14,8 @@ module Suburb
         write(''"
 #{'·' * 60}
 #{cmd.to_command} #{args.join}
+
+current dir: #{Dir.pwd}
 "'')
       end
 
@@ -24,7 +26,7 @@ module Suburb
       def print_command_exit(_cmd, *stdout)
         write(''"
 #{stdout.join(' ')}
-#{'·' * 60}
+#{'·  ' * 20}
 "'')
       end
 

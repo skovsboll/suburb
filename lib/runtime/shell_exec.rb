@@ -13,12 +13,8 @@ module Suburb
         @direct = TTY::Command.new(printer: :pretty)
       end
 
-      def run(command, stdout: false)
-        if stdout
-          @direct.run(command)
-        else
-          @cmd.run(command)
-        end
+      def run(command)
+        @cmd.run(command)
       rescue TTY::Command::ExitError => e
         raise Runtime::RuntimeError, e.message
       end
