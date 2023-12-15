@@ -33,7 +33,11 @@ module Suburb
         end
 
         ins.zip(outs) do |in_, out_|
-          run "cp #{in_} #{out_}"
+          if shell != :powershell
+            run "cp #{in_} #{out_}"
+          else
+            run "Copy-Item #{in_} -Destination #{out_}"
+          end
         end
       end
     end
