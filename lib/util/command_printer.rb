@@ -20,20 +20,16 @@ current dir: #{Dir.pwd}
       end
 
       def print_command_out_data(_cmd, *stdout)
-        for line in stdout
-          begin
-            write line unless line.empty?
-          rescue Encoding::CompatibilityError
-          end
+        stdout.each do |line|
+          write line unless line.strip.empty?
+        rescue Encoding::CompatibilityError
         end
       end
 
       def print_command_err_data(_cmd, *stderr)
-        for line in stderr
-          begin
-            write line unless line.empty?
-          rescue Encoding::CompatibilityError
-          end
+        stderr.each do |line|
+          write line unless line.strip.empty?
+        rescue Encoding::CompatibilityError
         end
       end
 
