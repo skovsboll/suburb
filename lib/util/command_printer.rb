@@ -19,9 +19,23 @@ current dir: #{Dir.pwd}
 "'')
       end
 
-      def print_command_out_data(_cmd, *stdout); end
+      def print_command_out_data(_cmd, *stdout)
+        for line in stdout
+          begin
+            write line
+          rescue Encoding::CompatibilityError
+          end
+        end
+      end
 
-      def print_command_err_data(_cmd, *stderr); end
+      def print_command_err_data(_cmd, *stderr)
+        for line in stderr
+          begin
+            write line
+          rescue Encoding::CompatibilityError
+          end
+        end
+      end
 
       def print_command_exit(_cmd, *stdout)
         write(''"

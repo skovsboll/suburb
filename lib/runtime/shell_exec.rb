@@ -10,7 +10,6 @@ module Suburb
 
       def initialize(log)
         @cmd = TTY::Command.new(printer: Util::CommandPrinter.new(log))
-        @direct = TTY::Command.new(printer: :pretty)
       end
 
       def run(command)
