@@ -22,7 +22,7 @@ current dir: #{Dir.pwd}
       def print_command_out_data(_cmd, *stdout)
         for line in stdout
           begin
-            write line
+            write line unless line.empty?
           rescue Encoding::CompatibilityError
           end
         end
@@ -31,7 +31,7 @@ current dir: #{Dir.pwd}
       def print_command_err_data(_cmd, *stderr)
         for line in stderr
           begin
-            write line
+            write line unless line.empty?
           rescue Encoding::CompatibilityError
           end
         end
