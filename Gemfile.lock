@@ -3,6 +3,7 @@ PATH
   specs:
     suburb (0.1.1)
       filewatcher (~> 2.0)
+      pastel (~> 0.8)
       tty-command (~> 0.10)
       tty-link (~> 0.1)
       tty-logger (~> 0.6)

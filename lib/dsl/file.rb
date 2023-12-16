@@ -3,7 +3,7 @@
 module Suburb
   module DSL
     class File
-      def initialize(file_or_ary_or_proc, ins: [], &builder)
+      def initialize(file_or_ary_or_proc, ins: [], tags: [], &builder)
         raise Runtime::RuntimeError, 'A file must have a recipe in the form of a do .. end block.' unless builder
 
         @outs = Array(file_or_ary_or_proc)
@@ -12,9 +12,10 @@ module Suburb
 
         @ins = Array(ins)
         @builder = builder
+        @tags = Array(tags)
       end
 
-      attr_reader :outs, :ins, :builder
+      attr_reader :outs, :ins, :builder, :tags
     end
   end
 end

@@ -1,3 +1,5 @@
+require 'pastel'
+
 module Suburb
   module Runtime
     class Lister
@@ -6,6 +8,7 @@ module Suburb
       def initialize(log) = @log = log
 
       def run
+        pastel = Pastel.new
         sub_specs = Dir.glob('**/subu.rb')
         super_specs = find_all_subu_specs(Dir.pwd)
 
@@ -14,8 +17,20 @@ module Suburb
           acc.merge!(item.to_dependency_graph)
         end
 
-        @log.info 'Available files:'
-        graph.nodes.each { |_, node| @log.info node.path.relative_path_from(graph.root_path) }
+        @log.info 'Files that you can build:'
+
+        graph.nodes_by_tag.each do |tag, nodes|
+          puts pastel.blue.bold(tag) unless tag == ''
+          nodes.each do |node|
+            print_node node, pastel
+          end
+        end
+      end
+
+      def print_node(node, pastel)
+        relative = node.path.relative_path_from(Dir.pwd)
+        dir, base = File.split(relative)
+        puts "#{File.basename($0)} #{pastel.green(dir)}/#{pastel.yellow(base)}"
       end
     end
   end

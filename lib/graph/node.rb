@@ -6,9 +6,9 @@ module Suburb
     # A node represents an absolute, normalized path in a file system and its dependent nodes.
     # Does not allow cyclic dependecies.
     class Node
-      attr_accessor :path, :dependencies, :original_path, :root_path
+      attr_accessor :path, :dependencies, :original_path, :root_path, :tags
 
-      def initialize(path, original_path, root_path)
+      def initialize(path, original_path, root_path, tags)
         @path = Pathname.new(path)
         raise Runtime::RuntimeError, 'A node must be constructed with a absolute path' unless @path.absolute?
 
@@ -18,6 +18,7 @@ module Suburb
 
         @root_path = root_path
         @dependencies = []
+        @tags = tags
       end
 
       def add_dependency(node)

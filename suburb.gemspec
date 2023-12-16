@@ -36,10 +36,11 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'filewatcher', '~> 2.0'
+  spec.add_dependency 'pastel', '~> 0.8'
   spec.add_dependency 'tty-command', '~> 0.10'
   spec.add_dependency 'tty-link', '~> 0.1'
   spec.add_dependency 'tty-logger', '~> 0.6'
   spec.add_dependency 'tty-option', '~> 0.3'
   spec.add_dependency 'tty-progressbar', '~> 0.18'
-  spec.add_dependency 'filewatcher', '~> 2.0'
 end

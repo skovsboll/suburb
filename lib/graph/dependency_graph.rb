@@ -22,10 +22,10 @@ module Suburb
 
       # @param [String] path
       # @return [Node]
-      def add_path(path)
+      def add_path(path, tags)
         absolute_path = normalize_path(path)
         explain_outside_root_path!(path, absolute_path, root_path) unless @root_path.child_path?(absolute_path)
-        node = Node.new(absolute_path, path, root_path)
+        node = Node.new(absolute_path, path, root_path, tags)
         @nodes[absolute_path.to_s] = node
         node
       end
@@ -57,6 +57,20 @@ module Suburb
         self
       end
 
+      def nodes_by_tag
+        nodes.each_with_object({}) do |(_, node), acc|
+          if node.tags.any?
+            node.tags.each do |tag|
+              acc[tag] ||= []
+              acc[tag] << node
+            end
+          else
+            acc[""] ||= []
+            acc[""] << node
+          end
+        end
+      end
+
       # @return [Array[Node]]
       def missing_dependencies
         @nodes.flat_map do |_, node|
@@ -84,7 +98,7 @@ module Suburb
 
         # explain_outside_root_path!(to_path, absolute_to_path, root_path) unless @root_path.child_path?(absolute_to_path)
 
-        to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path, root_path)
+        to_node = @nodes[absolute_to_path] || Node.new(absolute_to_path, to_path, root_path, [])
         from_node.add_dependency(to_node)
 
         to_node
