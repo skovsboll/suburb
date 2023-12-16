@@ -19,7 +19,7 @@ module Suburb
 
         @log.info 'Files that you can build:'
 
-        graph.nodes_by_tag.each do |tag, nodes|
+        graph.nodes_by_tag.sort.each do |tag, nodes|
           puts pastel.blue.bold(tag) unless tag == ''
           nodes.each do |node|
             print_node node, pastel
@@ -30,7 +30,7 @@ module Suburb
       def print_node(node, pastel)
         relative = node.path.relative_path_from(Dir.pwd)
         dir, base = File.split(relative)
-        puts "#{File.basename($0)} #{pastel.green(dir)}/#{pastel.yellow(base)}"
+        puts "· #{File.basename($0)} #{pastel.green(dir)}/#{pastel.yellow(base)}"
       end
     end
   end

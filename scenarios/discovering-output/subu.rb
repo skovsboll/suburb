@@ -10,7 +10,8 @@ build 'tinyusdz/sandbox/emscripten/build/libtinyusdz_static.a',
 end
 
 # The Tiny USDZ git repo
-build 'tinyusdz/CMakeLists.txt', tags: 'dynamic' do |_ins, outs|
+build 'tinyusdz/CMakeLists.txt',
+      tags: 'dynamic' do |_ins, outs|
   rtx 'git clone https://github.com/syoyo/tinyusdz.git' unless File.exist? outs[0]
   Dir.chdir 'tinyusdz' do
     rtx 'git pull'
