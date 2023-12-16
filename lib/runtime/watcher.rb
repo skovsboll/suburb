@@ -6,7 +6,7 @@ module Suburb
       include DependencySorting
 
       def initialize(graph, node, &block)
-        paths_to_watch = transitive_ins(graph, node).map { _1.path.to_s }
+        paths_to_watch = transitive_ins(graph, node).map { _1.path.to_s }.uniq
         Filewatcher.new(paths_to_watch).watch do |changes|
           block.call(changes)
         end

@@ -9,6 +9,6 @@ group :development, :test do
   gem 'guard-rspec', require: false
   gem 'rake', '~> 13.0'
   gem 'rspec', '~> 3.0'
-  gem 'solargraph'
-  gem 'solargraph-standardrb'
+  gem 'solargraph', require: false
+  gem 'solargraph-standardrb', require: false
 end

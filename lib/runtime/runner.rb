@@ -84,7 +84,9 @@ module Suburb
             Dir.chdir(node.root_path) do
               FileUtils.mkdir_p node.path.dirname
               builder = subu_spec.builders[node.path.to_s]
+
               ShellExec.new(@log).instance_exec(ins, outs, &builder)
+
               builders_executed << builder
             end
           end
