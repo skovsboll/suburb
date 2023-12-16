@@ -30,7 +30,7 @@ module Suburb
       def print_node(node, pastel)
         relative = node.path.relative_path_from(Dir.pwd)
         dir, base = File.split(relative)
-        puts "· #{File.basename($0)} #{pastel.green(dir)}/#{pastel.yellow(base)}"
+        puts "· #{pastel.dark(File.basename($0))} #{pastel.green(dir)}/#{pastel.yellow(base)}"
       end
     end
   end
