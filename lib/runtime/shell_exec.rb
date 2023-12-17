@@ -18,6 +18,11 @@ module Suburb
         raise Runtime::RuntimeError, e.message
       end
 
+      def save(result, filename)
+        stdout, = result
+        File.write filename, stdout
+      end
+
       def rtx(command, **kw)
         if os != :windows
           run("rtx x -- #{command}", **kw)
