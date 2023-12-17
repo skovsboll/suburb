@@ -103,7 +103,7 @@ module Suburb
           files = Array(params[:files])
           run_files(files, runner)
           log.info "Completed in #{format_elapsed(start_time, Time.new)}."
-          log.info 'Log file: cat ./suburb.log'
+          print_log_file_link
         end
       rescue CyclicDependencyError => e
         cyclic_dep_error(e, runner, start_time)
@@ -111,12 +111,16 @@ module Suburb
         runtime_error(e, runner, start_time)
       end
 
+      def print_log_file_link
+        log.info TTY::Link.link_to('Log saved to suburb.log', "file://#{::File.expand_path('suburb.log')}")
+      end
+
       def cyclic_dep_error(e, runner, start_time)
         log.debug e
         log.error e.message
         log.info runner.show_graph_tree(e.graph) if runner.iterm2?
         log.info "Errored after #{format_elapsed(start_time, Time.new)}."
-        log.info 'Complete log: cat ./suburb.log'
+        print_log_file_link
         exit 2
       end
 
@@ -124,7 +128,7 @@ module Suburb
         log.debug e
         log.error e.message
         log.info "Errored after #{format_elapsed(start_time, Time.new)}."
-        log.info 'Complete log: cat ./suburb.log'
+        print_log_file_link
         exit 1
       end
 

@@ -16,3 +16,5 @@ suburb.log
 /scenarios/discovering-output/tinyusdz/
 /scenarios/readme-example/generated_code/
 /scenarios/readme-example/out/
+/scenarios/npm-package/dist/package.json
+/suburb.log
