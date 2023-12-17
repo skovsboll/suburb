@@ -11,7 +11,8 @@ It lets you work using the tools that you love.
 
 ### A taste of Suburb
 
-Build definitions live in files called `subu.rb`. In this one, two output files are declared. They are connected through the `ins:` named argument.
+Build definitions live in files called `subu.rb`. In this one, two output files are declared. 
+They are connected through the `using:` named argument.
 
 
 `subu.rb`: (&larr; the build definition file)
@@ -31,7 +32,7 @@ end
 Here, the file named `out/B.txt` can only be build after `out/A.txt` is built. So Suburb builds A.txt then proceeds to B.txt.
 This is the simplest build graph imaginable. But Suburb can do a whole lot more than that.
 
-A.txt and B.txt will be built right in your file system, where you expect them to be. No confusing symlinks or vritualization going on. Which means your source maps and debug symbols will point to your source code. Imagine that.
+A.txt and B.txt will be built right in your file system, where you expect them to be. No confusing symlinks or vritualization going on. Which means your source maps and debug symbols will point to your source code, as you would expect.
 
 
 ### Suburb caches results. No need to build if dependencies dit not change.
