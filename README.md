@@ -3,58 +3,69 @@
 
 ### The developer friendly build graph
 
-A build tool that connects other build tools with a complete and acyclic graph.
-Unline many other build tools, Suburb does not try to take over the world but lets you work,
-directly in your code repo, using the tools that you love.
+A build tool that connects other build tools with a real build graph.
+Unlike many other build tools, Suburb does not try to take over the world. 
+It lets you work using the tools that you love.
 
 
 
 ### A taste of Suburb
 
-
-Imagine you have a repo where you want to use a tool, say `openapi-generator-cli` and zip it up.
-
 Build definitions live in files called `subu.rb`. In this one, two output files are declared. They are connected through the `ins:` named argument.
 
 
 `subu.rb`: (&larr; the build definition file)
+
 ```ruby
-file 'out/A.txt' do
-  sh 'touch out/A.txt'
+
+build 'out/A.txt' do
+  run 'touch out/A.txt'
 end
 
-file 'out/B.txt', ins: 'out/A.txt' do
-  sh 'touch out/B.txt'
+build 'out/B.txt', using: 'out/A.txt' do
+  run 'touch out/B.txt'
 end
+
 ```
 
+Here, the file named `out/B.txt` can only be build after `out/A.txt` is built. So Suburb builds A.txt then proceeds to B.txt.
+This is the simplest build graph imaginable. But Suburb can do a whole lot more than that.
 
-### Another example mixing shell and Ruby code:
+A.txt and B.txt will be built right in your file system, where you expect them to be. No confusing symlinks or vritualization going on. Which means your source maps and debug symbols will point to your source code. Imagine that.
 
-`subu.rb`: (&larr; the build definition file)
+
+### Suburb caches results. No need to build if dependencies dit not change.
+
+With suburb, all tasks are file tasks. A file must be produced (Make-style phony tasks do not exist). Caching is 
+simply based on file modification date.
+
+`subu.rb`
+
 ```ruby
-file 'app.zip', ins: ['generated_code/api.rb', 'manifest.md'] do |ins, outs|
-  sh "zip #{outs[0]} #{ins.join(' ')}"
 
-file 'generated_code/api.rb', ins: 'api.yaml' do |ins, outs|
-  File.write(outs[0], 
-    "require 'sinatra'\n" +
-      File.readlines(ins[0]).map(&:strip).map { 
-        "get '#{_1}' { [200, {}, 'hello from #{_1}'] }" 
-      }.join("\n")
-  )
+build 'test-results.txt', using: ['src/**/*.ts', 'test/**/*.ts', 'node_modules', 'pnpm-lock.yaml'] do 
+  output = 'vitest'
+  save output, 'test-results.txt'
 end
+
+build 'dist/index.html', using: ['src/**/*.ts', 'node_modules', 'pnpm-lock.yaml'] do
+  run 'vite build'
+end
+
+build ['node_modules', 'pnpm-lock.yaml'], using: ['package.json'] do
+  run 'pnpm install'
+end
+
 ```
 
 Now, at the root, you can say:
 
 ```bash
 
-suburb app.zip
+suburb dist/index.html
 
-# ┌ Building out/app.zip ▣▣
-# └── generated_code/api.rb
-# └── out/app.zip
+# ┌ Building dist/index.html ▣▣
+# └── node_modules
 # ℹ info    Completed in 7 ms.
 # ℹ info    Log file: cat ./suburb.log
 
@@ -98,8 +109,6 @@ Options:
   -l, --list       List the files that can be build in this directory, its
                    parent or child directories.
   -t, --show-tree  Show a visual graph of the dependency tree.
-  -w, --watch      Watch file and dependencies (including transitive) for
-                   changes and rebuild as needed.
 
 Examples:
   Build and watch website
@@ -112,16 +121,19 @@ Examples:
     $ suburb --clean
 ```
 
-## Reasons for Suburb
+## Philosophy behind Suburb
 
 Makefiles and Rakefiles are easy to read and understand. 
 They have two flaws though: 1) They require the entire graph to be specified in one (M/R)akefile. While you can invoke one from another, there is no tree/graph of targets and their dependencies.
 
 Bazel has good tool isolation, great build dependency isolation, predictable builds and caching.
 
-Docker buildx and bake has easy to understand Dockerfiles and great tool isolation during build. But it has a mediocre concept of complete build graphs (additional_contexts). It has OK caching, based on checksums but made with the concept of layers instead of a true tree. 
+Docker buildx and bake has easy to understand Dockerfiles and great tool isolation during build. But it has a mediocre concept of complete build graphs (additional_contexts). It does have caching, based on checksums but made with the concept of layers instead of a true tree. 
 
 Vite, rollup, ESBuild and that lot are great at Typescript and Javascript projects, but that's all they do. Time to build Rust or C++ and you have to look elsewhere anyway.
+
+Imagine you could find a build graph that worked with your existing tool chains?
+
 
 
 ## What Suburb does differently
@@ -151,3 +163,4 @@ You can still work on your local machine like you are used to. Run `pnpm run dev
 **Su**per **Bu**ild 
 
 Build definition files are named subu.rb. I wanted build definitions to end with .rb so editors can highlight and understand the ruby code.
+
