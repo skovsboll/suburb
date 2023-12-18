@@ -44,8 +44,8 @@ module Suburb
                 "For the 'cp' (copy) command to work, there must be an equal number of ins and outs. There are #{ins.size} ins and #{outs.size} outs. "
         end
 
-        ins.zip(outs) do |in_, out_|
-          if shell != :powershell
+        ins.zip(outs).each do |in_, out_|
+          if os != :windows
             run "cp #{in_} #{out_}"
           else
             run "Copy-Item #{in_} -Destination #{out_}"
