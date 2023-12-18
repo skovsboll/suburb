@@ -2,6 +2,7 @@
 
 require_relative '../util/command_printer'
 require_relative './platform'
+require 'fileutils'
 
 module Suburb
   module Runtime
@@ -45,11 +46,7 @@ module Suburb
         end
 
         ins.zip(outs).each do |in_, out_|
-          if os != :windows
-            run "cp #{in_} #{out_}"
-          else
-            run "Copy-Item #{in_} -Destination #{out_}"
-          end
+          FileUtils.cp(in_, out_)
         end
       end
     end
