@@ -22,7 +22,7 @@ module Suburb
 
       # @param [String] path
       # @return [Node]
-      def add_path(path, tags)
+      def add_path(path, tags: [])
         absolute_path = normalize_path(path)
         explain_outside_root_path!(path, absolute_path, root_path) unless @root_path.child_path?(absolute_path)
         node = Node.new(absolute_path, path, root_path, tags)
@@ -65,8 +65,8 @@ module Suburb
               acc[tag] << node
             end
           else
-            acc[""] ||= []
-            acc[""] << node
+            acc[''] ||= []
+            acc[''] << node
           end
         end
       end

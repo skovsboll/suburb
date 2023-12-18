@@ -57,7 +57,7 @@ module Suburb
       end
 
       def add_single_out(out_, ins, tags, dependencies, &builder)
-        node = dependencies.add_path(out_, tags)
+        node = dependencies.add_path(out_, tags:)
         builders[node.path.to_s] = builder
         ins.each do |in_|
           add_in(dependencies, in_, out_)

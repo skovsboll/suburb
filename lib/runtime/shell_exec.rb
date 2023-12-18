@@ -12,17 +12,24 @@ module Suburb
         @cmd = TTY::Command.new(printer: Util::CommandPrinter.new(log))
       end
 
+      # @param [String] command
+      # @return [TTY::Command::Result]
       def run(command)
         @cmd.run(command)
       rescue TTY::Command::ExitError => e
         raise Runtime::RuntimeError, e.message
       end
 
-      def save(result, filename)
+      # @param [String] filename
+      # @param [TTY::Command::Result] result
+      def write(filename, result)
         stdout, = result
         File.write filename, stdout
       end
 
+      # @param [String] command
+      # @param [Hash] kw
+      # @return [TTY::Command::Result]
       def rtx(command, **kw)
         if os != :windows
           run("rtx x -- #{command}", **kw)
