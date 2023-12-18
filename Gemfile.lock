@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    suburb (0.1.1)
+    suburb (0.2.0)
       filewatcher (~> 2.0)
       pastel (~> 0.8)
       tty-command (~> 0.10)
