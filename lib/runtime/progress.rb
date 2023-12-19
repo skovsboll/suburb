@@ -6,9 +6,8 @@ module Suburb
     module Progress
       def with_progress(nodes, clean: false, &block)
         pastel = Pastel.new
-        green  = pastel.green('▣')
-        yellow = pastel.yellow('⬚')
-
+        green  = pastel.green('●')
+        yellow = pastel.yellow('○')
         status = clean ? 'cleaning' : 'building'
         main_path = nodes.last.path.relative_path_from(Pathname.pwd)
         bar = TTY::ProgressBar::Multi.new("#{nodes.last.original_path} #{pastel.dim(status)} :bar",
