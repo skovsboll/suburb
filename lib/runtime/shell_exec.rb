@@ -15,8 +15,8 @@ module Suburb
 
       # @param [String] command
       # @return [TTY::Command::Result]
-      def run(command)
-        @cmd.run(command)
+      def run(command, &block)
+        @cmd.run(command, &block)
       rescue TTY::Command::ExitError => e
         raise Runtime::RuntimeError, e.message
       end
@@ -31,11 +31,11 @@ module Suburb
       # @param [String] command
       # @param [Hash] kw
       # @return [TTY::Command::Result]
-      def rtx(command, **kw)
+      def rtx(command, **kw, &block)
         if os != :windows
-          run("rtx x -- #{command}", **kw)
+          run("rtx x -- #{command}", **kw, &block)
         else
-          run(command)
+          run(command, &block)
         end
       end
 
