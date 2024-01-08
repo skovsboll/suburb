@@ -58,7 +58,7 @@ module Suburb
       end
 
       def nodes_by_tag
-        nodes.each_with_object({}) do |(_, node), acc|
+        @nodes.each_with_object({}) do |(_, node), acc|
           if node.tags.any?
             node.tags.each do |tag|
               acc[tag] ||= []
@@ -69,6 +69,10 @@ module Suburb
             acc[''] << node
           end
         end
+      end
+
+      def filter_nodes!(&block)
+        @nodes.select!(&block)
       end
 
       # @return [Array[Node]]

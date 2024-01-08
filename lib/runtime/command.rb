@@ -96,11 +96,11 @@ module Suburb
 
       def run_suburb
         start_time = Time.new
+        files = Array(params[:files])
         if params[:list]
-          Lister.new(log).run
+          Lister.new(log).run(files.first)
         else
           runner = Runner.new(log)
-          files = Array(params[:files])
           run_files(files, runner)
           log.info "Completed in #{format_elapsed(start_time, Time.new)}."
           print_log_file_link

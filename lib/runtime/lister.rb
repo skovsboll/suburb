@@ -7,7 +7,7 @@ module Suburb
 
       def initialize(log) = @log = log
 
-      def run
+      def run(subset)
         pastel = Pastel.new
         sub_specs = Dir.glob('**/subu.rb')
         super_specs = find_all_subu_specs(Dir.pwd)
@@ -18,6 +18,15 @@ module Suburb
         end
 
         @log.info 'Files that you can build:'
+
+        if subset
+          subset_abs = File.expand_path(subset)
+          if glob? subset
+            graph.filter_nodes! { File.fnmatch(subset_abs, _1) }
+          else
+            graph.filter_nodes! { _1.include?(subset_abs) }
+          end
+        end
 
         graph.nodes_by_tag.sort.each do |tag, nodes|
           puts pastel.blue.bold(tag) unless tag == ''
@@ -31,6 +40,10 @@ module Suburb
         relative = node.path.relative_path_from(Dir.pwd)
         dir, base = File.split(relative)
         puts "· #{pastel.dark(File.basename($0))} #{pastel.green(dir)}/#{pastel.yellow(base)}"
+      end
+
+      def glob?(path)
+        path.include?('*')
       end
     end
   end
