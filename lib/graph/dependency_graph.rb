@@ -11,11 +11,13 @@ module Suburb
       attr_reader :nodes
       # @ root_path: Pathname
       attr_reader :root_path
+      attr_reader :spec
 
-      def initialize(root_path)
-        raise Suburb::Runtime::RuntimeError, 'A dependency graph must have a root path' unless root_path
+      def initialize(spec)
+        raise Suburb::Runtime::RuntimeError, 'A dependency graph must have a root path' unless spec.root_path
 
-        @root_path = Pathname.new(root_path).expand_path
+        @root_path = Pathname.new(spec.root_path).expand_path
+        @spec = spec
 
         @nodes = {}
       end

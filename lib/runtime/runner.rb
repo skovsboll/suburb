@@ -22,31 +22,31 @@ module Suburb
         @log = log
       end
 
-      def run(target_path, verbose: false, force: false, watch: false)
-        spec = find_subu_spec!(target_path)
-        run_subu_spec(spec, target_path, force:, watch:, clean: false, verbose:)
+      def run(targets_paths_or_globs, verbose: false, force: false, watch: false)
+        graph = read_graph!(targets_paths_or_globs)
+        execute(graph, targets_paths_or_globs, force:, watch:, clean: false, verbose:)
       end
 
-      def clean(target_path, verbose: false)
-        run_subu_spec(find_subu_spec!(target_path), target_path, force: false, clean: true, verbose:)
+      def clean(targets_paths_or_globs, verbose: false)
+        graph = read_graph!(targets_paths_or_globs)
+        execute(graph, targets_paths_or_globs, force: false, clean: true, verbose:)
       end
 
-      def find_subu_spec!(target_path)
-        find_subu_rb(target_path) or
-          raise Runtime::RuntimeError, "No subu.rb found defining target file '#{target_path}'"
-      end
+      def read_graph!(targets_paths_or_globs)
+        subu_rbs = find_subu_rbs(targets_paths_or_globs)
+        graph = subu_rbs.map { read_graph(read_spec(_1)) }.reduce(&:merge!)
 
-      def run_subu_spec(subu_rb, target_file_paths, force: false, watch: false, clean: false, verbose: false)
-        spec = read_spec(subu_rb)
-        graph = read_graph(spec)
-        execute graph, spec, target_file_paths, force:, watch:, clean:, verbose:
+        return graph if graph
+
+        raise Runtime::RuntimeError,
+              "No subu.rb found defining target files: '#{targets_paths_or_globs.join(', ')}'"
       end
 
       # @param [DependencyGraph] graph
       # @param [DSL::Root] _subu_spec
       # @param [String] target_file_path
       # @param [Boolean] force
-      def execute(graph, subu_spec, targets_paths_or_globs,
+      def execute(graph, targets_paths_or_globs,
                   force: false, watch: false, clean: false, verbose: false)
 
         target_nodes = Array(targets_paths_or_globs)
@@ -69,7 +69,7 @@ module Suburb
         non_existing_targets = target_nodes.filter { !_1.path.exist? }
 
         if deps.any? || non_existing_targets.any? || clean || force
-          execute_nodes_in_order(subu_spec, deps + target_nodes, clean:, verbose:)
+          execute_nodes_in_order(graph.spec, deps + target_nodes, clean:, verbose:)
         else
           @log.success 'All files up to date.'
         end

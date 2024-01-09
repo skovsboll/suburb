@@ -3,9 +3,15 @@ require 'pathname'
 module Suburb
   module Runtime
     module Discovery
+      def find_subu_rbs(file_paths_or_globs)
+        Array(file_paths_or_globs)
+          .flat_map { find_all_subu_specs(_1) }
+          .uniq
+      end
+
       # @param [String] file_path
       # @return [Root|NilClass]
-      def find_subu_rb(file_path)
+      def find_one_subu_rb(file_path)
         Pathname.new(file_path).ascend do |parent|
           maybe_subu = parent + 'subu.rb'
           return maybe_subu.realpath if maybe_subu.exist?
@@ -48,7 +54,7 @@ module Suburb
 
       def discover_sub_graphs!(graph, spec, already_visited: [])
         graph.undeclared_dependencies.each do |dep|
-          maybe_subu_rb = find_subu_rb(dep.path)
+          maybe_subu_rb = find_one_subu_rb(dep.path)
           next unless maybe_subu_rb && !already_visited.include?(maybe_subu_rb.dirname)
 
           other_spec = DSL::Spec.new(maybe_subu_rb)

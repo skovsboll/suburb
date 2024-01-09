@@ -7,24 +7,26 @@ module Suburb
 
       def initialize(log) = @log = log
 
-      def run(subset)
+      def run(subsets)
+        subsets = Array(subsets).map { ::File.expand_path(_1) }
         pastel = Pastel.new
         sub_specs = Dir.glob('**/subu.rb')
         super_specs = find_all_subu_specs(Dir.pwd)
 
         specs = (super_specs + sub_specs).map { read_spec(_1) }
-        graph = specs.each_with_object(Graph::DependencyGraph.new(Dir.pwd)) do |item, acc|
-          acc.merge!(item.to_dependency_graph)
-        end
+        graph = specs.map(&:to_dependency_graph).reduce(&:merge!)
 
         @log.info 'Files that you can build:'
 
-        if subset
-          subset_abs = File.expand_path(subset)
-          if glob? subset
-            graph.filter_nodes! { File.fnmatch(subset_abs, _1) }
-          else
-            graph.filter_nodes! { _1.include?(subset_abs) }
+        if subsets.any?
+          graph.filter_nodes! do |node_path, _|
+            subsets.any? do |subset|
+              if glob? subset
+                File.fnmatch(subset, node_path)
+              else
+                node_path.include?(subset)
+              end
+            end
           end
         end
 

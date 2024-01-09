@@ -98,7 +98,7 @@ module Suburb
         start_time = Time.new
         files = Array(params[:files])
         if params[:list]
-          Lister.new(log).run(files.first)
+          Lister.new(log).run(files)
         else
           runner = Runner.new(log)
           run_files(files, runner)
@@ -133,20 +133,18 @@ module Suburb
       end
 
       def run_files(files, runner)
-        if files.any?
-          files.each do |file|
-            file_path = ::File.expand_path(file)
-            if params[:clean]
-              runner.clean(file_path, verbose: params[:verbose])
-            elsif params[:tree]
-              if runner.iterm2?
-                log.info runner.show_tree_and_link(file_path)
-              else
-                log.warn 'Run this in iTerm2 to show trees and links.'
-              end
+        abs_files = files.map { ::File.expand_path(_1) }
+        if abs_files.any?
+          if params[:clean]
+            runner.clean(abs_files, verbose: params[:verbose])
+          elsif params[:tree]
+            if runner.iterm2?
+              log.info runner.show_tree_and_link(abs_files)
             else
-              runner.run(file_path, force: params[:force], watch: params[:watch], verbose: params[:verbose])
+              log.warn 'Run this in iTerm2 to show trees and links.'
             end
+          else
+            runner.run(abs_files, force: params[:force], watch: params[:watch], verbose: params[:verbose])
           end
         else
           print help
