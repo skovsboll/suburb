@@ -18,10 +18,12 @@ module Suburb
         discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
         abs_target = File.expand_path(target_path)
-        root_node = graph.nodes[abs_target]
-        reachable_deps = [root_node] + transitive_dependencies(graph, root_node)
 
-        show_graph_tree(reachable_deps)
+        root_nodes = graph.nodes.filter { |node_path, _| File.fnmatch?(abs_target, node_path) }.values
+
+        all_deps = root_nodes.flat_map { transitive_dependencies(graph, _1) }.uniq(&:path)
+
+        show_graph_tree(root_nodes + all_deps)
       end
 
       def show_graph_tree(nodes)
