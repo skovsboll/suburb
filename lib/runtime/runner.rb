@@ -24,9 +24,6 @@ module Suburb
 
       def run(target_path, verbose: false, force: false, watch: false)
         spec = find_subu_spec!(target_path)
-        if glob? target_path
-          target_path = 
-        end
         run_subu_spec(spec, target_path, force:, watch:, clean: false, verbose:)
       end
 
@@ -42,29 +39,37 @@ module Suburb
       def run_subu_spec(subu_rb, target_file_paths, force: false, watch: false, clean: false, verbose: false)
         spec = read_spec(subu_rb)
         graph = read_graph(spec)
-        target_file_paths.each do |target_file_path|
-          execute_single_root graph, spec, target_file_path, force:, watch:, clean:, verbose:
-        end
+        execute graph, spec, target_file_paths, force:, watch:, clean:, verbose:
       end
 
       # @param [DependencyGraph] graph
       # @param [DSL::Root] _subu_spec
       # @param [String] target_file_path
       # @param [Boolean] force
-      def execute_single_root(graph, subu_spec, target_file_path,
-                              force: false, watch: false, clean: false, verbose: false)
-        target = Pathname.new(target_file_path).expand_path
-        raise Runtime::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
+      def execute(graph, subu_spec, targets_paths_or_globs,
+                  force: false, watch: false, clean: false, verbose: false)
 
-        root_node = graph.nodes[target.to_s]
-        deps = if force || clean
-                 transitive_dependencies(graph, root_node)
-               else
-                 transitive_deps_requiring_build(graph, root_node)
-               end
+        target_nodes = Array(targets_paths_or_globs)
+                       .map { File.expand_path(_1) }
+                       .flat_map do |target_path|
+          graph.nodes.filter { |node_path, _| File.fnmatch?(target_path, node_path) }.values
+        end.uniq(&:path)
 
-        if deps.any? || !File.exist?(root_node.path.to_s) || clean || force
-          execute_nodes_in_order(subu_spec, deps + [root_node], clean:, verbose:)
+        raise Runtime::RuntimeError, "No suburb definition for #{targets_paths_or_globs}" unless target_nodes.any?
+
+        deps = target_nodes.reduce([]) do |acc, node|
+          deps = if force || clean
+                   transitive_dependencies(graph, node)
+                 else
+                   transitive_deps_requiring_build(graph, node)
+                 end
+          acc + deps
+        end.uniq(&:path)
+
+        non_existing_targets = target_nodes.filter { !_1.path.exist? }
+
+        if deps.any? || non_existing_targets.any? || clean || force
+          execute_nodes_in_order(subu_spec, deps + target_nodes, clean:, verbose:)
         else
           @log.success 'All files up to date.'
         end
