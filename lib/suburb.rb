@@ -11,6 +11,7 @@ require_relative './dsl/file'
 
 require_relative './runtime/platform'
 require_relative './runtime/progress'
+require_relative './runtime/change_tracking'
 require_relative './runtime/debug'
 require_relative './runtime/dependency_sorting'
 require_relative './runtime/tree_visualizer'

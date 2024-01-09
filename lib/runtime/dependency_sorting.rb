@@ -35,6 +35,15 @@ module Suburb
           .flat_map { transitive_ins(graph, _1) } + deps
       end
 
+      def transitive_outs(graph, node)
+        deps = node
+               .dependencies
+               .select { graph.nodes[_1.path.to_s] }
+
+        deps
+          .flat_map { transitive_outs(graph, _1) } + deps
+      end
+
       # @param [DependencyGraph] graph
       # @param [Node] node
       # @return [Node] The node that has a build definition, if it is registered

@@ -50,17 +50,76 @@ module Suburb
         raise Runtime::RuntimeError, "No suburb definition for #{target}" unless graph.nodes.include? target.to_s
 
         root_node = graph.nodes[target.to_s]
-        deps = if force || clean
-                 transitive_dependencies(graph, root_node)
-               else
-                 transitive_deps_requiring_build(graph, root_node)
-               end
+        deps_to_build = if force || clean
+                          transitive_dependencies(graph, root_node)
+                        else
+                          transitive_deps_requiring_build(graph, root_node)
+                        end
 
-        if deps.any? || !File.exist?(root_node.path.to_s) || clean || force
-          execute_nodes_in_order(subu_spec, deps + [root_node], clean:, verbose:)
+        if deps_to_build.any? || !File.exist?(root_node.path.to_s) || clean || force
+          execute_notes_watching_changes(subu_spec, graph, deps_to_build, root_node, clean:, verbose:)
         else
           @log.success 'All files up to date.'
         end
+      end
+
+      def execute_notes_watching_changes(subu_spec, graph, deps_to_build, root_node, clean: false, verbose: false)
+        watcher = ChangeTracking.new(graph, root_node, deps_to_build)
+        execute_nodes_in_order(subu_spec, deps_to_build + [root_node], clean:, verbose:)
+        changes = watcher.changes
+
+        @log.warn 'Build predictablity in danger! See suburb.log for details.' if changes.values.flatten.any?
+
+        wan_non_modified_outs(changes) if changes[:non_modified_outs].any?
+        warn_non_read_ins(changes) if changes[:non_read_ins].any?
+        warn_non_declared_files_read(changes) if changes[:non_declared_files_read].any?
+        warn_non_declared_files_modified(changes) if changes[:non_declared_files_modified].any?
+        warn_non_created_outs(changes) if changes[:non_created_outs].any?
+        warn_non_existing_ins(changes) if changes[:non_existing_ins].any?
+      end
+
+      def warn_non_existing_ins(changes)
+        @log.warn 'Some files were supposed to be used as dependencies, but do not exist'
+        str = changes[:non_existing_ins].map { Pathname.new(_1).relative_path_from(Dir.pwd).to_s }.join("\n")
+        @log.debug "\n#{str}"
+      end
+
+      def warn_non_created_outs(changes)
+        @log.warn 'Some files were supposed to be created, but were not'
+        str = changes[:non_created_outs].map do
+          Pathname.new(_1).relative_path_from(Dir.pwd).to_s
+        end.join("\n")
+        @log.debug "\n#{str}"
+      end
+
+      def warn_non_declared_files_modified(changes)
+        @log.warn 'Some files were modified that are not declared as build targets'
+        str = changes[:non_declared_files_modified].map do
+          Pathname.new(_1).relative_path_from(Dir.pwd).to_s
+        end.join("\n")
+        @log.debug "\n#{str}"
+      end
+
+      def warn_non_declared_files_read(changes)
+        @log.warn 'Some files read that were not declared as dependencies'
+        str = changes[:non_declared_files_read].map do
+          Pathname.new(_1).relative_path_from(Dir.pwd).to_s
+        end.join("\n")
+        @log.debug "\n#{str}"
+      end
+
+      def warn_non_read_ins(changes)
+        @log.warn 'Some files that were supposed to be used as dependencies, were not read'
+        str = changes[:non_read_ins].map { Pathname.new(_1).relative_path_from(Dir.pwd).to_s }.join("\n")
+        @log.debug "\n#{str}"
+      end
+
+      def wan_non_modified_outs(changes)
+        @log.warn 'Some files that were supposed to be modified, were not modified'
+        str = changes[:non_modified_outs].map do
+          Pathname.new(_1).relative_path_from(Dir.pwd).to_s
+        end.join("\n")
+        @log.debug "\n#{str}"
       end
 
       # @param [DSL::Root] subu_spec
@@ -93,7 +152,7 @@ module Suburb
         outs = Array(node.path)
         if clean
           outs.each do |out_|
-            File.delete(out_) if File.exist?(out_)
+            FileUtils.rm_rf(out_) if File.exist?(out_)
           end
         else
           Dir.chdir(node.root_path) do
