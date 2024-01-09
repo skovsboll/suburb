@@ -68,10 +68,11 @@ module Suburb
       def execute_nodes_in_order(subu_spec, nodes, clean: false, verbose: false)
         builders_executed = []
 
-        nodes_with_builder = nodes.select do |node|
-          builder = subu_spec.builders[node.path.to_s]
-          builder && !builders_executed.include?(builder)
-        end
+        nodes_with_builder =
+          nodes.select do |node|
+            builder = subu_spec.builders[node.path.to_s]
+            builder && !builders_executed.include?(builder)
+          end.uniq(&:path)
 
         if verbose
           nodes_with_builder.each do |node|
