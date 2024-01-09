@@ -3,6 +3,8 @@ require 'tty-link'
 module Suburb
   module Runtime
     module TreeVisualizer
+      include DependencySorting
+
       def iterm2?
         TTY::Link.support_link?
       end
@@ -15,11 +17,15 @@ module Suburb
         graph = spec.to_dependency_graph
         discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
 
-        show_graph_tree(graph)
+        abs_target = File.expand_path(target_path)
+        root_node = graph.nodes[abs_target]
+        reachable_deps = [root_node] + transitive_dependencies(graph, root_node)
+
+        show_graph_tree(reachable_deps)
       end
 
-      def show_graph_tree(graph)
-        graph_nodes = graph.nodes.map { mermaid(_2) }.flatten.uniq
+      def show_graph_tree(nodes)
+        graph_nodes = nodes.map { mermaid(_1) }.flatten.uniq
         mermaid_source = <<~EOS
           graph LR; #{graph_nodes.join(';')}
         EOS
