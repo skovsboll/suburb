@@ -33,8 +33,11 @@ module Suburb
       end
 
       def read_graph!(targets_paths_or_globs)
-        subu_rbs = find_subu_rbs(targets_paths_or_globs)
-        graph = subu_rbs.map { read_graph(read_spec(_1)) }.reduce(&:merge!)
+        sub_specs = Dir.glob('**/subu.rb')
+        super_specs = find_all_subu_specs(Dir.pwd)
+
+        specs = (super_specs + sub_specs).map { read_spec(_1) }
+        graph = specs.map(&:to_dependency_graph).reduce(&:merge!)
 
         return graph if graph
 
@@ -57,21 +60,18 @@ module Suburb
 
         raise Runtime::RuntimeError, "No suburb definition for #{targets_paths_or_globs}" unless target_nodes.any?
 
-        deps = target_nodes.reduce([]) do |acc, node|
+        target_nodes.each do |node|
           deps = if force || clean
                    transitive_dependencies(graph, node)
                  else
                    transitive_deps_requiring_build(graph, node)
-                 end
-          acc + deps
-        end.uniq(&:path)
+                 end.uniq(&:path)
 
-        non_existing_targets = target_nodes.filter { !_1.path.exist? }
-
-        if deps.any? || non_existing_targets.any? || clean || force
-          execute_nodes_in_order(graph.spec, deps + target_nodes, clean:, verbose:)
-        else
-          @log.success 'All files up to date.'
+          if deps.any? || !File.exist?(node.path) || clean || force
+            execute_nodes_in_order(graph.spec, deps + [node], clean:, verbose:)
+          else
+            @log.success 'All files up to date.'
+          end
         end
       end
 
@@ -80,11 +80,10 @@ module Suburb
       def execute_nodes_in_order(subu_spec, nodes, clean: false, verbose: false)
         builders_executed = []
 
-        nodes_with_builder =
-          nodes.select do |node|
-            builder = subu_spec.builders[node.path.to_s]
-            builder && !builders_executed.include?(builder)
-          end.uniq(&:path)
+        nodes_with_builder = nodes.select do |node|
+          builder = subu_spec.builders[node.path.to_s]
+          builder && !builders_executed.include?(builder)
+        end.uniq(&:path)
 
         if verbose
           nodes_with_builder.each do |node|

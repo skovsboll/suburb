@@ -10,7 +10,7 @@ module Suburb
         yellow = pastel.yellow('○')
         status = clean ? 'cleaning' : 'building'
         main_path = nodes.last.path.relative_path_from(Pathname.pwd)
-        bar = TTY::ProgressBar::Multi.new("#{nodes.last.original_path} #{pastel.dim(status)} :bar",
+        bar = TTY::ProgressBar::Multi.new("#{main_path} #{pastel.dim(status)} :bar",
                                           total: nodes.size,
                                           bar_format: :crate,
                                           complete: green,

@@ -56,6 +56,8 @@ module Suburb
         other_graph.nodes.each do |_path, node|
           add_node(node)
         end
+
+        spec.merge!(other_graph.spec)
         self
       end
 
