@@ -25,11 +25,17 @@ module Suburb
         no_command
 
         example <<~EOS
-          Build and watch website
-            $ suburb -w dist/index.html
+          Build npm package
+            $ suburb pkg/mything.tgz
+
+          List buildable targets
+            $ suburb -l
 
           Run tests, even if no dependencies changed
             $ suburb -f test-results.txt
+
+          Show dependency graph
+            $ suburb -t dist/index.html
 
           Clean (remove) file all dependencies
             $ suburb --clean
