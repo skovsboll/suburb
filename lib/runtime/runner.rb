@@ -23,26 +23,13 @@ module Suburb
       end
 
       def run(targets_paths_or_globs, verbose: false, force: false, watch: false)
-        graph = read_graph!(targets_paths_or_globs)
+        graph = read_graphs(targets_paths_or_globs)
         execute(graph, targets_paths_or_globs, force:, watch:, clean: false, verbose:)
       end
 
       def clean(targets_paths_or_globs, verbose: false)
-        graph = read_graph!(targets_paths_or_globs)
+        graph = read_graphs(targets_paths_or_globs)
         execute(graph, targets_paths_or_globs, force: false, clean: true, verbose:)
-      end
-
-      def read_graph!(targets_paths_or_globs)
-        sub_specs = Dir.glob('**/subu.rb')
-        super_specs = find_all_subu_specs(Dir.pwd)
-
-        specs = (super_specs + sub_specs).map { read_spec(_1) }
-        graph = specs.map(&:to_dependency_graph).reduce(&:merge!)
-
-        return graph if graph
-
-        raise Runtime::RuntimeError,
-              "No subu.rb found defining target files: '#{targets_paths_or_globs.join(', ')}'"
       end
 
       # @param [DependencyGraph] graph

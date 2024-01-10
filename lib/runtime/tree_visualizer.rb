@@ -1,29 +1,28 @@
 require 'tty-link'
+require_relative './discovery'
 
 module Suburb
   module Runtime
     module TreeVisualizer
       include DependencySorting
+      include Discovery
 
       def iterm2?
         TTY::Link.support_link?
       end
 
-      def show_tree_and_link(target_path)
-        subu_rb = find_subu_spec!(target_path)
+      def show_tree_and_link(targets_paths_or_globs)
+        graph = read_graphs(targets_paths_or_globs)
 
-        spec = DSL::Spec.new(subu_rb)
-        spec.instance_eval(File.read(subu_rb))
-        graph = spec.to_dependency_graph
-        discover_sub_graphs!(graph, spec, already_visited: [subu_rb.dirname])
+        target_nodes = Array(targets_paths_or_globs)
+                       .map { File.expand_path(_1) }
+                       .flat_map do |target_path|
+          graph.nodes.filter { |node_path, _| File.fnmatch?(target_path, node_path) }.values
+        end.uniq(&:path)
 
-        abs_target = File.expand_path(target_path)
+        all_deps = target_nodes.flat_map { transitive_dependencies(graph, _1) }.uniq(&:path)
 
-        root_nodes = graph.nodes.filter { |node_path, _| File.fnmatch?(abs_target, node_path) }.values
-
-        all_deps = root_nodes.flat_map { transitive_dependencies(graph, _1) }.uniq(&:path)
-
-        show_graph_tree(root_nodes + all_deps)
+        show_graph_tree(target_nodes + all_deps)
       end
 
       def show_graph_tree(nodes)

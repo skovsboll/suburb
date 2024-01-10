@@ -33,11 +33,30 @@ module Suburb
         spec
       end
 
+      def read_graphs(targets_paths_or_globs)
+        sub_specs = Dir.glob('**/subu.rb')
+        target_specs = find_subu_rbs(targets_paths_or_globs)
+        super_specs = find_all_subu_specs(Dir.pwd)
+
+        specs = (super_specs + target_specs + sub_specs)
+                .uniq
+                .map { read_spec(_1) }
+
+        graph = specs.map(&:to_dependency_graph).reduce(&:merge!)
+
+        discover_sub_graphs!(graph)
+
+        return graph if graph
+
+        raise Runtime::RuntimeError,
+              "No subu.rb found defining target files: '#{targets_paths_or_globs.join(', ')}'"
+      end
+
       def read_graph(spec)
         raise Runtime::RuntimeError, 'This subu.rb spec does not declare any files.' if spec.files.empty?
 
         graph = spec.to_dependency_graph
-        discover_sub_graphs!(graph, spec, already_visited: [spec.root_path])
+        discover_sub_graphs!(graph, already_visited: [spec.root_path])
 
         if graph.missing_dependencies.any?
           raise Runtime::RuntimeError, ''"Some targets do not exist, neither as files on disk, nor as outputs in a subu.rb file:
@@ -52,7 +71,7 @@ module Suburb
 
       private
 
-      def discover_sub_graphs!(graph, spec, already_visited: [])
+      def discover_sub_graphs!(graph, already_visited: [])
         graph.undeclared_dependencies.each do |dep|
           maybe_subu_rb = find_one_subu_rb(dep.path)
           next unless maybe_subu_rb && !already_visited.include?(maybe_subu_rb.dirname)
@@ -61,10 +80,9 @@ module Suburb
           other_spec.instance_eval(File.read(maybe_subu_rb))
           other_graph = other_spec.to_dependency_graph
 
-          discover_sub_graphs!(other_graph, other_spec, already_visited: already_visited + [maybe_subu_rb.dirname])
+          discover_sub_graphs!(other_graph, already_visited: already_visited + [maybe_subu_rb.dirname])
 
           graph.merge!(other_graph)
-          spec.merge!(other_spec)
         end
       end
     end
