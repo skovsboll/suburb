@@ -58,7 +58,11 @@ module Suburb
           graph.nodes.filter { |node_path, _| File.fnmatch?(target_path, node_path) }.values
         end.uniq(&:path)
 
-        raise Runtime::RuntimeError, "No suburb definition for #{targets_paths_or_globs}" unless target_nodes.any?
+        unless target_nodes.any?
+          targets_pp = targets_paths_or_globs.map { Pathname.new(_1).relative_path_from(Dir.pwd) }.join(', ')
+          raise Runtime::RuntimeError,
+                "No suburb definition for #{targets_pp}"
+        end
 
         target_nodes.each do |node|
           deps = if force || clean
