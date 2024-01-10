@@ -4,9 +4,9 @@
 ### The developer friendly build graph
 
 A build tool that connects other build tools with a real build graph.
-Unlike many other build tools, Suburb does not try to take over the world. 
+Unlike many other build tools, Suburb does not try to lock you in. 
 It lets you work using the tools that you love.
-
+Think of it as a build graph that connects other build tools and applies caching and (#dynamic-discovery)[dynamic discovery].
 
 
 ### A taste of Suburb
@@ -81,6 +81,13 @@ suburb app.zip -t
 ![dependencies](scenarios/readme-example/deps.jpeg)
 
 
+### Dynamic Discovery
+
+Imagine you have on main project and two sub projects. Your main project is a web app. One sub project is a WASM library built using C++. The other is an npm package built using pnpm and Vite.
+
+Dynamic discovery means you can have the build definitions right next to each individual project root. Dependencies in one subu.rb file can reference targets in other subu.rb files elsewhere in the project structure. 
+
+
 ## Requirements
 
 Ruby 3.1.3 or higher.
@@ -110,13 +117,20 @@ Options:
   -l, --list       List the files that can be build in this directory, its
                    parent or child directories.
   -t, --show-tree  Show a visual graph of the dependency tree.
+  -v, --verbose    Print detailed log to stdout
 
 Examples:
-  Build and watch website
-    $ suburb -w dist/index.html
+  Build npm package
+    $ suburb pkg/mything.tgz
+
+  List buildable targets
+    $ suburb -l
 
   Run tests, even if no dependencies changed
     $ suburb -f test-results.txt
+
+  Show dependency graph
+    $ suburb -t dist/index.html
 
   Clean (remove) file all dependencies
     $ suburb --clean
