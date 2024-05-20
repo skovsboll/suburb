@@ -3,16 +3,22 @@
 
 ### The developer friendly build graph
 
-A build tool that connects other build tools with a real build graph.
-Unlike many other build tools, Suburb does not try to lock you in. 
-It lets you work using the tools that you love.
-Think of it as a build graph that connects other build tools and applies caching and (#dynamic-discovery)[dynamic discovery].
+If you want fast and predictable builds, you need a proper build graph. 
 
+One that knows inputs and outputs to proper cache builds. 
+
+You don't need a complicated build tool that locks you in and symlinks your files all over the place. 
+
+You need a build tool that simply connects your build tools with a graph.
+
+You need
+
+Suburb 
 
 ### A taste of Suburb
 
 Build definitions live in files called `subu.rb`. In this one, two output files are declared. 
-They are connected through the `using:` named argument.
+They are connected through the `using:` argument.
 
 
 `subu.rb`: (&larr; the build definition file)
@@ -35,7 +41,7 @@ This is the simplest build graph imaginable. But Suburb can do a whole lot more 
 A.txt and B.txt will be built right in your file system, where you expect them to be. No confusing symlinks or vritualization going on. Which means your source maps and debug symbols will point to your source code, as you would expect.
 
 
-### Suburb caches results. No need to build if dependencies dit not change.
+### Suburb caches results. No need to build if dependencies are unchanged.
 
 With suburb, all tasks are file tasks. A file must be produced (Make-style phony tasks do not exist). Caching is 
 simply based on file modification date.
